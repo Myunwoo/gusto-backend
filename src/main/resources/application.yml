@@ -27,4 +27,15 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
-    enabled: true
+    enabled: ${SWAGGER_ENABLED:false}  # 기본값 false, 개발 환경에서만 true
+
+gusto:
+  security:
+    # AccessToken 검증 불필요 화이트리스트
+    whitelist:
+      # Actuator
+      - "/actuator/**"
+      # 브라우저 자동 요청 (Chrome DevTools 등)
+      - "/.well-known/**"
+      - "/favicon.ico"
+      - "/robots.txt"
