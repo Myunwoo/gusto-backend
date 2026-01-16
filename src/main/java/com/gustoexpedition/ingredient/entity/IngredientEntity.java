@@ -22,6 +22,9 @@ public class IngredientEntity {
     @Column(name = "ingredient_id")
     private Long ingredientId;
 
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
+
     @Column(name = "thumbnail_url")
     private String thumbnailUrl;
 
@@ -36,13 +39,18 @@ public class IngredientEntity {
 
     protected IngredientEntity() {}
 
-    public IngredientEntity(String thumbnailUrl, Boolean isActive) {
+    public IngredientEntity(String name, String thumbnailUrl, Boolean isActive) {
+        this.name = name;
         this.thumbnailUrl = thumbnailUrl;
         this.isActive = isActive != null ? isActive : true;
     }
 
     public Long getIngredientId() {
         return ingredientId;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getThumbnailUrl() {

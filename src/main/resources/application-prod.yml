@@ -1,3 +1,31 @@
 springdoc:
   swagger-ui:
     enabled: false
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.data.jpa.repository.query: WARN
+    org.springframework.transaction: WARN
+    com.gustoexpedition: INFO
+  file:
+    name: ${LOG_PATH:-/var/log/gusto}/gusto-backend.log
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        show_sql: false
+    open-in-view: false
+
+LOG_FORMAT: ${LOG_FORMAT:PLAIN}
+LOG_PATH: ${LOG_PATH:-/var/log/gusto}

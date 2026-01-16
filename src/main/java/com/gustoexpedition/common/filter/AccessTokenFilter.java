@@ -51,10 +51,8 @@ import java.util.List;
 @Getter
 @Setter
 public class AccessTokenFilter extends OncePerRequestFilter {
-
     // AccessToken 검증 불필요 화이트리스트
     private List<String> whitelist = new ArrayList<>();
-    
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final Environment environment;
     
@@ -69,32 +67,6 @@ public class AccessTokenFilter extends OncePerRequestFilter {
     
     public AccessTokenFilter(Environment environment) {
         this.environment = environment;
-    }
-    
-    /**
-     * 실제 사용할 화이트리스트 반환 (프로파일별 Swagger UI 경로 포함)
-     */
-    private List<String> getEffectiveWhitelist() {
-        List<String> effectiveList = new ArrayList<>(whitelist);
-        
-        // 개발 환경에서만 Swagger UI 경로 추가
-        if (isDevProfile()) {
-            effectiveList.addAll(SWAGGER_UI_PATHS);
-        }
-        
-        return effectiveList;
-    }
-    
-    /**
-     * 개발 환경 프로파일인지 확인
-     */
-    private boolean isDevProfile() {
-        String[] activeProfiles = environment.getActiveProfiles();
-        if (activeProfiles.length == 0) {
-            // 프로파일이 없으면 기본값으로 dev로 간주 (로컬 개발)
-            return true;
-        }
-        return Arrays.asList(activeProfiles).contains("dev");
     }
 
     @Override
@@ -133,17 +105,16 @@ public class AccessTokenFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 화이트리스트에 포함된 경로인지 확인
-     * 
+     * 화이트리스트에 포함된 요청인지 검증
      * - 정적 리소스 경로(/.well-known, /favicon.ico, /robots.txt)는 GET 요청만 허용
      * - Swagger UI는 개발 환경에서만 허용
      * - Actuator 등은 모든 메서드 허용
      */
     private boolean isWhitelisted(String requestPath, String requestMethod) {
         
-        List<String> effectiveWhitelist = getEffectiveWhitelist();
+        List<String> allowList = getAllowlist();
         
-        for (String pattern : effectiveWhitelist) {
+        for (String pattern : allowList) {
             // 패턴이 "METHOD:경로" 형식인지 확인
             if (pattern.contains(":")) {
                 String[] parts = pattern.split(":", 2);
@@ -170,8 +141,7 @@ public class AccessTokenFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 정적 리소스 경로인지 확인
-     * 브라우저 자동 요청 경로는 GET만 허용
+     * 정적 리소스 경로인지 확인, 브라우저 자동 요청 경로는 GET만 허용
      */
     private boolean isStaticResourcePath(String pattern) {
         return pattern.startsWith("/.well-known") ||
@@ -180,8 +150,7 @@ public class AccessTokenFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 요청에서 AccessToken 추출
-     * Authorization 헤더에서 "Bearer {token}" 형식으로 추출
+     * AccessToken 추출
      */
     private String extractAccessToken(HttpServletRequest request) {
         String authorization = request.getHeader("Authorization");
@@ -201,5 +170,31 @@ public class AccessTokenFilter extends OncePerRequestFilter {
         // TODO: JWT 검증 로직 구현
         // 예: JWT 서명 검증, 만료 시간 확인 등
         return token != null && !token.isEmpty();
+    }
+
+    /**
+     * 프로필 별 화이트 리스트 반환
+     */
+    private List<String> getAllowlist() {
+        List<String> allowList = new ArrayList<>(whitelist);
+
+        // local, dev 환경에서만 Swagger UI 경로 추가
+        if (isSwaggerEnabled()) {
+            allowList.addAll(SWAGGER_UI_PATHS);
+        }
+
+        return allowList;
+    }
+
+    /**
+     * 프로필 기준 Swagger UI 활성화 여부 확인
+     */
+    private boolean isSwaggerEnabled() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        if (activeProfiles.length == 0) {
+            return false;
+        }
+        List<String> profiles = Arrays.asList(activeProfiles);
+        return profiles.contains("local") || profiles.contains("dev");
     }
 }

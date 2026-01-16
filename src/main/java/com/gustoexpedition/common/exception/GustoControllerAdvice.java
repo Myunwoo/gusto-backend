@@ -11,15 +11,16 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * packageName    : com.gustoexpedition.common.exception
  * fileName       : GustoControllerAdvice
  * author         : fddsg
  * date           : 2026-01-15
- * description    :
+ * description    : 전역 예외 처리
  */
-@ControllerAdvice
+@ControllerAdvice(basePackages = "com.gustoexpedition")
 @RequiredArgsConstructor
 public class GustoControllerAdvice {
     private final MessageUtil messageUtil;
@@ -68,13 +69,36 @@ public class GustoControllerAdvice {
      * methodName : handleMethodArgumentNotValidException
      * author : IM HYUN WOO
      * description : column nullabe 규칙 위반, 필수 파라미터 규칙 위반, 멀티 파트 요청 규칙 위반
-     *
+     * 커스텀 validator는 명확한 에러 코드를 반환해야 하며, 없으면 COM002 사용
      * @param e
      * @return response entity
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("COM002", messageUtil.getFormattedMessage("COM002")));
+        String errorCode = e.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .filter(error -> error.getDefaultMessage() != null && !error.getDefaultMessage().trim().isEmpty())
+                .map(error -> error.getDefaultMessage().trim())
+                .findFirst()
+                .orElse("COM002");  // 기본 에러 코드
+        
+        // 에러 코드로 메시지 조회 NoSuchMessageException 발생시 커스텀 validator의 에러 코드 점검 필요
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(errorCode, messageUtil.getFormattedMessage(errorCode)));
+    }
+
+    /**
+     * methodName : handleNoResourceFoundException
+     * author : fddsg
+     * description : 정적 리소스를 찾을 수 없을 때 처리 (404)
+     *
+     * @param e
+     * @return response entity
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("COM003", messageUtil.getFormattedMessage("COM003")));
     }
 
     /**

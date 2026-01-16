@@ -15,9 +15,9 @@ logging:
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/gusto}
-    username: ${DB_USERNAME:gusto}
-    password: ${DB_PASSWORD:gusto}
+    url: jdbc:postgresql://localhost:5432/gusto
+    username: gusto
+    password: gusto
   jpa:
     hibernate:
       ddl-auto: validate
@@ -27,5 +27,5 @@ spring:
         show_sql: false
     open-in-view: false
 
-LOG_FORMAT: ${LOG_FORMAT:PLAIN}
-LOG_PATH: ${LOG_PATH:./logs}
+LOG_FORMAT: PLAIN
+LOG_PATH: ./logs
