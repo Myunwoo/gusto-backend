@@ -34,9 +34,9 @@ public class SelectIngredientResDto {
     @Schema(description = "활성화 여부", example = "true")
     private Boolean isActive;
     
-    @Schema(description = "locale별 별칭 목록 (locale명: [별칭 배열])", 
-            example = "{\"ko-KR\": [\"방울토마토\", \"체리토마토\"]}")
-    private Map<String, List<String>> aliases;
+    @Schema(description = "locale별 별칭 목록 (locale명: [별칭 정보 배열])", 
+            example = "{\"ko-KR\": [{\"aliasId\": 1, \"alias\": \"방울토마토\"}, {\"aliasId\": 2, \"alias\": \"체리토마토\"}]}")
+    private Map<String, List<AliasDto>> aliases;
     
     @Schema(description = "관련 재료 목록 (includeRelationYn=true일 때만 포함)")
     private List<RelatedIngredientDto> relatedIngredients;

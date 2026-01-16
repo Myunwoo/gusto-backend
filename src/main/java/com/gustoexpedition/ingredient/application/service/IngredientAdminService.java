@@ -68,10 +68,8 @@ public class IngredientAdminService implements IngredientAdminUseCase {
     @Transactional
     public CreateIngredientI18nResDto createIngredientI18n(CreateIngredientI18nReqDto req) {
         // 1. 재료 존재 확인
-        IngredientEntity ingredient = ingredientJpaRepository.findById(req.getIngredientId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("재료를 찾을 수 없습니다: ingredientId=%d", req.getIngredientId())
-                ));
+        ingredientJpaRepository.findById(req.getIngredientId())
+                .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
 
         // 2. 입력 검증
         IngredientValidator.validateName(req.getName());
@@ -112,16 +110,12 @@ public class IngredientAdminService implements IngredientAdminUseCase {
     @Transactional
     public CreateAliasResDto createAlias(CreateAliasReqDto req) {
         // 1. 재료 존재 확인
-        IngredientEntity ingredient = ingredientJpaRepository.findById(req.getIngredientId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("재료를 찾을 수 없습니다: ingredientId=%d", req.getIngredientId())
-                ));
+        ingredientJpaRepository.findById(req.getIngredientId())
+                .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
 
-        // 2. 재료의 해당 locale 정보 존재 확인
+        // 2. 재료의 locale 정보 존재 확인
         ingredientI18nJpaRepository.findById(new IngredientI18nId(req.getIngredientId(), req.getLocale()))
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("재료의 %s 언어 정보를 찾을 수 없습니다: ingredientId=%d", req.getLocale(), req.getIngredientId())
-                ));
+                .orElseThrow(() -> new GustoException("INGR007")); // 재료의 locale 정보를 찾을 수 없습니다.
 
         // 3. 별칭 엔티티 생성 및 저장
         List<IngredientAliasEntity> aliasEntities = req.getAliases().stream()
@@ -134,7 +128,7 @@ public class IngredientAdminService implements IngredientAdminUseCase {
                 .collect(Collectors.toList());
 
         if (aliasEntities.isEmpty()) {
-            throw new IllegalArgumentException("유효한 별칭이 없습니다.");
+            throw new GustoException("INGR008"); // 유효한 별칭이 없습니다.
         }
 
         List<IngredientAliasEntity> savedAliases = ingredientAliasJpaRepository.saveAll(aliasEntities);
@@ -195,8 +189,8 @@ public class IngredientAdminService implements IngredientAdminUseCase {
             }
         }
 
-        // 3. 별칭 목록 조회 (locale별로 그룹화)
-        Map<String, List<String>> aliasesMap = new HashMap<>();
+        // 3. 별칭 목록 조회 (locale별로 그룹화, ID 포함)
+        Map<String, List<AliasDto>> aliasesMap = new HashMap<>();
         List<IngredientAliasEntity> aliasEntities;
         
         if (locale != null) {
@@ -212,7 +206,7 @@ public class IngredientAdminService implements IngredientAdminUseCase {
                 .collect(Collectors.groupingBy(
                         IngredientAliasEntity::getLocale,
                         Collectors.mapping(
-                                IngredientAliasEntity::getAlias,
+                                entity -> new AliasDto(entity.getAliasId(), entity.getAlias()),
                                 Collectors.toList()
                         )
                 ));
@@ -261,6 +255,281 @@ public class IngredientAdminService implements IngredientAdminUseCase {
                 relatedIngredients,
                 ingredient.getCreatedAt(),
                 ingredient.getUpdatedAt()
+        );
+    }
+
+    @Override
+    @Transactional
+    public UpdateIngredientBasicResDto updateIngredient(UpdateIngredientBasicReqDto req) {
+        // 1. 재료 존재 확인
+        IngredientEntity ingredient = ingredientJpaRepository.findById(req.getIngredientId())
+                .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
+
+        // 2. 입력 검증
+        IngredientValidator.validateName(req.getName());
+
+        // 3. 엔티티 수정
+        ingredient.setName(req.getName().trim());
+        ingredient.setThumbnailUrl(req.getThumbnailUrl());
+        ingredient.setIsActive(req.getIsActive() != null ? req.getIsActive() : true);
+
+        // 4. 저장 (JPA가 자동으로 updated_at 갱신)
+        IngredientEntity updatedIngredient = ingredientJpaRepository.save(ingredient);
+
+        // 5. 응답 DTO 생성
+        return new UpdateIngredientBasicResDto(
+                updatedIngredient.getIngredientId(),
+                updatedIngredient.getName(),
+                updatedIngredient.getThumbnailUrl(),
+                updatedIngredient.getIsActive(),
+                updatedIngredient.getUpdatedAt()
+        );
+    }
+
+    @Override
+    @Transactional
+    public UpdateIngredientI18nResDto updateIngredientI18n(UpdateIngredientI18nReqDto req) {
+        // 1. 재료 존재 확인
+        ingredientJpaRepository.findById(req.getIngredientId())
+                .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
+
+        // 2. 입력 검증
+        IngredientValidator.validateName(req.getName());
+
+        // 3. i18n 정보 조회
+        IngredientI18nEntity i18nEntity = ingredientI18nJpaRepository.findById(
+                new IngredientI18nId(req.getIngredientId(), req.getLocale())
+        ).orElseThrow(() -> new GustoException("INGR007")); // 재료의 locale 정보를 찾을 수 없습니다.
+
+        // 4. 중복 체크 (다른 재료의 같은 locale과 name 조합인지 확인)
+        ingredientI18nJpaRepository.findByLocaleAndName(req.getLocale(), req.getName().trim())
+                .ifPresent(existing -> {
+                    // 자기 자신이 아닌 경우에만 중복 에러
+                    if (!existing.getIngredientId().equals(req.getIngredientId()) ||
+                            !existing.getLocale().equals(req.getLocale())) {
+                        throw new GustoException("INGR002"); // 이미 존재하는 재료명입니다.
+                    }
+                });
+
+        // 5. 엔티티 수정
+        i18nEntity.setName(req.getName().trim());
+        i18nEntity.setDescription(req.getDescription());
+
+        // 6. 저장
+        IngredientI18nEntity updatedI18n = ingredientI18nJpaRepository.save(i18nEntity);
+
+        // 7. 응답 DTO 생성
+        return new UpdateIngredientI18nResDto(
+                updatedI18n.getIngredientId(),
+                updatedI18n.getLocale(),
+                updatedI18n.getName(),
+                updatedI18n.getDescription(),
+                updatedI18n.getUpdatedAt()
+        );
+    }
+
+    @Override
+    @Transactional
+    public UpdateAliasAllResDto updateAliasAll(UpdateAliasAllReqDto req) {
+        // 1. 재료 존재 확인
+        ingredientJpaRepository.findById(req.getIngredientId())
+                .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
+
+        // 2. 재료의 locale 정보 존재 확인
+        ingredientI18nJpaRepository.findById(new IngredientI18nId(req.getIngredientId(), req.getLocale()))
+                .orElseThrow(() -> new GustoException("INGR007")); // 재료의 locale 정보를 찾을 수 없습니다.
+
+        // 3. 기존 별칭 삭제
+        List<IngredientAliasEntity> existingAliases = ingredientAliasJpaRepository
+                .findByIngredientIdAndLocale(req.getIngredientId(), req.getLocale());
+        if (!existingAliases.isEmpty()) {
+            ingredientAliasJpaRepository.deleteAll(existingAliases);
+        }
+
+        // 4. 새 별칭 생성 및 저장
+        List<IngredientAliasEntity> aliasEntities = req.getAliases().stream()
+                .filter(alias -> alias != null && !alias.trim().isEmpty())
+                .map(alias -> new IngredientAliasEntity(
+                        req.getIngredientId(),
+                        req.getLocale(),
+                        alias.trim()
+                ))
+                .collect(Collectors.toList());
+
+        if (aliasEntities.isEmpty()) {
+            throw new GustoException("INGR008"); // 유효한 별칭이 없습니다.
+        }
+
+        List<IngredientAliasEntity> savedAliases = ingredientAliasJpaRepository.saveAll(aliasEntities);
+
+        // 5. 응답 DTO 생성
+        List<String> aliasList = savedAliases.stream()
+                .map(IngredientAliasEntity::getAlias)
+                .collect(Collectors.toList());
+
+        return new UpdateAliasAllResDto(
+                req.getIngredientId(),
+                req.getLocale(),
+                aliasList,
+                savedAliases.get(0).getCreatedAt()
+        );
+    }
+
+    @Override
+    @Transactional
+    public UpdateAliasResDto updateAlias(UpdateAliasReqDto req) {
+        // 1. 별칭 조회
+        IngredientAliasEntity aliasEntity = ingredientAliasJpaRepository.findById(req.getAliasId())
+                .orElseThrow(() -> new GustoException("INGR012")); // 별칭을 찾을 수 없습니다.
+
+        // 2. 입력 검증
+        if (req.getAlias() == null || req.getAlias().trim().isEmpty()) {
+            throw new GustoException("INGR010"); // 별칭은 필수입니다.
+        }
+
+        // 3. 중복 체크 (같은 재료, 같은 locale에서 같은 별칭이 이미 존재하는지 확인)
+        ingredientAliasJpaRepository.findByIngredientIdAndLocale(aliasEntity.getIngredientId(), aliasEntity.getLocale())
+                .stream()
+                .filter(existing -> !existing.getAliasId().equals(req.getAliasId()))
+                .filter(existing -> existing.getAlias().equals(req.getAlias().trim()))
+                .findFirst()
+                .ifPresent(existing -> {
+                    throw new GustoException("INGR002"); // 이미 존재하는 재료명입니다.
+                });
+
+        // 4. 별칭 수정
+        aliasEntity.setAlias(req.getAlias().trim());
+        IngredientAliasEntity savedAlias = ingredientAliasJpaRepository.save(aliasEntity);
+
+        // 5. 응답 DTO 생성
+        return new UpdateAliasResDto(
+                savedAlias.getAliasId(),
+                savedAlias.getIngredientId(),
+                savedAlias.getLocale(),
+                savedAlias.getAlias(),
+                savedAlias.getCreatedAt()
+        );
+    }
+
+    @Override
+    @Transactional
+    public DeleteIngredientResDto deleteIngredient(Long ingredientId) {
+        // 1. 재료 존재 확인
+        IngredientEntity ingredient = ingredientJpaRepository.findById(ingredientId)
+                .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
+
+        // 2. 관련 데이터 삭제 (CASCADE 또는 수동 삭제)
+        // - ingredient_i18n 삭제
+        List<IngredientI18nEntity> i18nList = ingredientI18nJpaRepository.findByIngredientId(ingredientId);
+        if (!i18nList.isEmpty()) {
+            ingredientI18nJpaRepository.deleteAll(i18nList);
+        }
+
+        // - ingredient_alias 삭제
+        List<IngredientAliasEntity> aliasList = ingredientAliasJpaRepository.findByIngredientId(ingredientId);
+        if (!aliasList.isEmpty()) {
+            ingredientAliasJpaRepository.deleteAll(aliasList);
+        }
+
+        // - ingredient_edge 삭제 (관계 정보)
+        List<IngredientEdgeEntity> edges = ingredientEdgeJpaRepository
+                .findByFromIngredientIdOrToIngredientId(ingredientId, ingredientId);
+        if (!edges.isEmpty()) {
+            ingredientEdgeJpaRepository.deleteAll(edges);
+        }
+
+        // 3. 재료 삭제
+        ingredientJpaRepository.delete(ingredient);
+
+        // 4. 응답 DTO 생성
+        return new DeleteIngredientResDto(
+                ingredientId,
+                "재료가 성공적으로 삭제되었습니다."
+        );
+    }
+
+    @Override
+    @Transactional
+    public DeleteIngredientI18nResDto deleteIngredientI18n(Long ingredientId, String locale) {
+        // 1. 재료 존재 확인
+        ingredientJpaRepository.findById(ingredientId)
+                .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
+
+        // 2. i18n 정보 조회
+        IngredientI18nEntity i18nEntity = ingredientI18nJpaRepository.findById(
+                new IngredientI18nId(ingredientId, locale)
+        ).orElseThrow(() -> new GustoException("INGR007")); // 재료의 locale 정보를 찾을 수 없습니다.
+
+        // 3. 관련 별칭도 함께 삭제 (해당 locale의 별칭)
+        List<IngredientAliasEntity> aliasList = ingredientAliasJpaRepository
+                .findByIngredientIdAndLocale(ingredientId, locale);
+        if (!aliasList.isEmpty()) {
+            ingredientAliasJpaRepository.deleteAll(aliasList);
+        }
+
+        // 4. i18n 정보 삭제
+        ingredientI18nJpaRepository.delete(i18nEntity);
+
+        // 5. 응답 DTO 생성
+        return new DeleteIngredientI18nResDto(
+                ingredientId,
+                locale,
+                "재료의 locale별 정보가 성공적으로 삭제되었습니다."
+        );
+    }
+
+    @Override
+    @Transactional
+    public DeleteAliasAllResDto deleteAliasAll(Long ingredientId, String locale) {
+        // 1. 재료 존재 확인
+        ingredientJpaRepository.findById(ingredientId)
+                .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
+
+        // 2. 재료의 locale 정보 존재 확인
+        ingredientI18nJpaRepository.findById(new IngredientI18nId(ingredientId, locale))
+                .orElseThrow(() -> new GustoException("INGR007")); // 재료의 locale 정보를 찾을 수 없습니다.
+
+        // 3. 별칭 조회
+        List<IngredientAliasEntity> aliasList = ingredientAliasJpaRepository
+                .findByIngredientIdAndLocale(ingredientId, locale);
+
+        if (aliasList.isEmpty()) {
+            throw new GustoException("INGR009"); // 삭제할 별칭이 없습니다.
+        }
+
+        // 4. 별칭 삭제
+        ingredientAliasJpaRepository.deleteAll(aliasList);
+
+        // 5. 응답 DTO 생성
+        return new DeleteAliasAllResDto(
+                ingredientId,
+                locale,
+                "재료의 별칭이 성공적으로 삭제되었습니다."
+        );
+    }
+
+    @Override
+    @Transactional
+    public DeleteAliasResDto deleteAlias(Long aliasId) {
+        // 1. 별칭 조회
+        IngredientAliasEntity aliasEntity = ingredientAliasJpaRepository.findById(aliasId)
+                .orElseThrow(() -> new GustoException("INGR012")); // 별칭을 찾을 수 없습니다.
+
+        // 2. 별칭 정보 저장 (삭제 전)
+        Long ingredientId = aliasEntity.getIngredientId();
+        String locale = aliasEntity.getLocale();
+        String alias = aliasEntity.getAlias();
+
+        // 3. 별칭 삭제
+        ingredientAliasJpaRepository.delete(aliasEntity);
+
+        // 4. 응답 DTO 생성
+        return new DeleteAliasResDto(
+                aliasId,
+                ingredientId,
+                locale,
+                alias,
+                "별칭이 성공적으로 삭제되었습니다."
         );
     }
 }

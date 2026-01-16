@@ -68,4 +68,16 @@ public class IngredientEntity {
     public Instant getUpdatedAt() {
         return updatedAt;
     }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setThumbnailUrl(String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
 }

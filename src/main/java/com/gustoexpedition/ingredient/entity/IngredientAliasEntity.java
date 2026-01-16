@@ -70,4 +70,8 @@ public class IngredientAliasEntity {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
+    }
 }

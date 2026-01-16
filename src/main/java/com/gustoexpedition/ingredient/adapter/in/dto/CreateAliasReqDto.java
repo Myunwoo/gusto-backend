@@ -23,17 +23,15 @@ import java.util.List;
 @Schema(description = "재료 별칭 생성 요청")
 public class CreateAliasReqDto {
 
-    @NotNull(message = "재료 ID는 필수입니다")
+    @NotNull(message = "INGR005")
     @Schema(description = "재료 ID", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long ingredientId;
 
     @ValidLocale
-    @NotBlank(message = "locale은 필수입니다")
-    @Size(max = 10, message = "locale은 10자 이하여야 합니다")
     @Schema(description = "언어 코드. 지원 locale: ko-KR, ja-JP, fr-FR, it-IT, en-US", example = "ko-KR", requiredMode = Schema.RequiredMode.REQUIRED)
     private String locale;
 
-    @NotEmpty(message = "별칭 목록은 필수입니다")
+    @NotEmpty(message = "ALAIS001")
     @Schema(description = "별칭 목록", example = "[\"방울토마토\", \"체리토마토\"]", requiredMode = Schema.RequiredMode.REQUIRED)
     private List<String> aliases;
 }
