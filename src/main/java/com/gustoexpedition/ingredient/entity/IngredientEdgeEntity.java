@@ -1,17 +1,16 @@
 package com.gustoexpedition.ingredient.entity;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
- * packageName    : com.gustoexpedition.ingredient.entity
- * fileName       : IngredientEdgeEntity
- * author         : fddsg
- * date           : 2026-01-15
- * description    : 재료 간 관계 엔티티
+ * packageName : com.gustoexpedition.ingredient.entity
+ * fileName : IngredientEdgeEntity
+ * author : fddsg
+ * date : 2026-01-15
+ * description : 재료 간 관계 엔티티
  */
 @Entity
 @Table(name = "ingredient_edge")
@@ -55,7 +54,24 @@ public class IngredientEdgeEntity {
     @JoinColumn(name = "to_ingredient_id", insertable = false, updatable = false)
     private IngredientEntity toIngredient;
 
-    protected IngredientEdgeEntity() {}
+    protected IngredientEdgeEntity() {
+    }
+
+    public IngredientEdgeEntity(Long fromIngredientId, Long toIngredientId, IngredientRelationType relationType,
+            BigDecimal score, BigDecimal confidence, String reasonSummary) {
+        // 무방향 그래프를 위해 항상 작은 ID가 from이 되도록 정규화
+        if (fromIngredientId > toIngredientId) {
+            this.fromIngredientId = toIngredientId;
+            this.toIngredientId = fromIngredientId;
+        } else {
+            this.fromIngredientId = fromIngredientId;
+            this.toIngredientId = toIngredientId;
+        }
+        this.relationType = relationType;
+        this.score = score;
+        this.confidence = confidence;
+        this.reasonSummary = reasonSummary;
+    }
 
     public Long getEdgeId() {
         return edgeId;
@@ -101,12 +117,28 @@ public class IngredientEdgeEntity {
         return toIngredient;
     }
 
+    public void setRelationType(IngredientRelationType relationType) {
+        this.relationType = relationType;
+    }
+
+    public void setScore(BigDecimal score) {
+        this.score = score;
+    }
+
+    public void setConfidence(BigDecimal confidence) {
+        this.confidence = confidence;
+    }
+
+    public void setReasonSummary(String reasonSummary) {
+        this.reasonSummary = reasonSummary;
+    }
+
     /**
      * 관계 타입 Enum
      */
     public enum IngredientRelationType {
-        PAIR_WELL,  // 궁합
-        AVOID,      // 비궁합
-        NEUTRAL     // 중립
+        PAIR_WELL, // 궁합
+        AVOID, // 비궁합
+        NEUTRAL // 중립
     }
 }

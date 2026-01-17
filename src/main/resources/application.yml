@@ -8,6 +8,12 @@ spring:
     url: jdbc:postgresql://localhost:5432/gusto
     username: gusto
     password: gusto
+    hikari:
+      maximum-pool-size: 5        # 소규모 프로젝트: 최대 5개 연결
+      minimum-idle: 2              # 소규모 프로젝트: 최소 2개 유지
+      connection-timeout: 30000    # 연결 대기 시간: 30초
+      idle-timeout: 600000         # 유휴 연결 타임아웃: 10분
+      max-lifetime: 1800000        # 연결 최대 생존 시간: 30분
   jpa:
     hibernate:
       ddl-auto: validate

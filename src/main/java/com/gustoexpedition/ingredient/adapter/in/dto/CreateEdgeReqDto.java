@@ -1,0 +1,55 @@
+package com.gustoexpedition.ingredient.adapter.in.dto;
+
+import com.gustoexpedition.ingredient.entity.IngredientEdgeEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+
+/**
+ * packageName : com.gustoexpedition.ingredient.adapter.in.dto
+ * fileName : CreateEdgeReqDto
+ * author : fddsg
+ * date : 2026-01-16
+ * description : 재료 간 관계 생성 요청 DTO
+ */
+@Getter
+@Setter
+@Schema(description = "재료 간 관계 생성 요청")
+public class CreateEdgeReqDto {
+
+  @NotNull(message = "EDGE001")
+  @Min(value = 1, message = "EDGE001")
+  @Schema(description = "첫 번째 재료 ID", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
+  private Long fromIngredientId;
+
+  @NotNull(message = "EDGE002")
+  @Min(value = 1, message = "EDGE002")
+  @Schema(description = "두 번째 재료 ID", example = "2", requiredMode = Schema.RequiredMode.REQUIRED)
+  private Long toIngredientId;
+
+  @NotNull(message = "EDGE003")
+  @Schema(description = "관계 타입 (PAIR_WELL: 궁합, AVOID: 비궁합, NEUTRAL: 중립)", example = "PAIR_WELL", requiredMode = Schema.RequiredMode.REQUIRED)
+  private IngredientEdgeEntity.IngredientRelationType relationType;
+
+  @NotNull(message = "EDGE004")
+  @DecimalMin(value = "-1.000", message = "EDGE005")
+  @DecimalMax(value = "1.000", message = "EDGE005")
+  @Schema(description = "관계 점수 (-1.000 ~ 1.000)", example = "0.700", requiredMode = Schema.RequiredMode.REQUIRED)
+  private BigDecimal score;
+
+  @DecimalMin(value = "0.000", message = "EDGE006")
+  @DecimalMax(value = "1.000", message = "EDGE006")
+  @Schema(description = "신뢰도 (0.000 ~ 1.000)", example = "0.850")
+  private BigDecimal confidence;
+
+  @Size(max = 255, message = "EDGE007")
+  @Schema(description = "관계 요약", example = "토마토와 바질은 클래식한 조합입니다.")
+  private String reasonSummary;
+}

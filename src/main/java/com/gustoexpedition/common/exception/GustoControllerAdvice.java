@@ -3,6 +3,7 @@ package com.gustoexpedition.common.exception;
 import com.gustoexpedition.common.util.MessageUtil;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,17 +15,17 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
- * packageName    : com.gustoexpedition.common.exception
- * fileName       : GustoControllerAdvice
- * author         : fddsg
- * date           : 2026-01-15
- * description    : 전역 예외 처리
+ * packageName : com.gustoexpedition.common.exception
+ * fileName : GustoControllerAdvice
+ * author : fddsg
+ * date : 2026-01-15
+ * description : 전역 예외 처리
  */
+@Slf4j
 @ControllerAdvice(basePackages = "com.gustoexpedition")
 @RequiredArgsConstructor
 public class GustoControllerAdvice {
     private final MessageUtil messageUtil;
-
 
     /**
      * methodName : handleNoSuchMessageException
@@ -49,7 +50,8 @@ public class GustoControllerAdvice {
      */
     @ExceptionHandler(GustoException.class)
     public ResponseEntity<ErrorResponse> handleGustoException(GustoException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(e.getMessage(), messageUtil.getFormattedMessage(e.getMessage())));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(e.getMessage(), messageUtil.getFormattedMessage(e.getMessage())));
     }
 
     /**
@@ -60,9 +62,11 @@ public class GustoControllerAdvice {
      * @param e
      * @return response entity
      */
-    @ExceptionHandler({IllegalArgumentException.class, ConstraintViolationException.class, MissingServletRequestParameterException.class, MissingServletRequestPartException.class})
+    @ExceptionHandler({ IllegalArgumentException.class, ConstraintViolationException.class,
+            MissingServletRequestParameterException.class, MissingServletRequestPartException.class })
     public ResponseEntity<ErrorResponse> handleEtcException(Exception e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("COM001", messageUtil.getFormattedMessage("COM001")));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("COM001", messageUtil.getFormattedMessage("COM001")));
     }
 
     /**
@@ -70,6 +74,7 @@ public class GustoControllerAdvice {
      * author : IM HYUN WOO
      * description : column nullabe 규칙 위반, 필수 파라미터 규칙 위반, 멀티 파트 요청 규칙 위반
      * 커스텀 validator는 명확한 에러 코드를 반환해야 하며, 없으면 COM002 사용
+     * 
      * @param e
      * @return response entity
      */
@@ -81,8 +86,8 @@ public class GustoControllerAdvice {
                 .filter(error -> error.getDefaultMessage() != null && !error.getDefaultMessage().trim().isEmpty())
                 .map(error -> error.getDefaultMessage().trim())
                 .findFirst()
-                .orElse("COM002");  // 기본 에러 코드
-        
+                .orElse("COM002"); // 기본 에러 코드
+
         // 에러 코드로 메시지 조회 NoSuchMessageException 발생시 커스텀 validator의 에러 코드 점검 필요
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(errorCode, messageUtil.getFormattedMessage(errorCode)));
@@ -98,19 +103,21 @@ public class GustoControllerAdvice {
      */
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("COM003", messageUtil.getFormattedMessage("COM003")));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("COM003", messageUtil.getFormattedMessage("COM003")));
     }
 
     /**
      * methodName : handleException
      * author : IM HYUN WOO
-     * description : Exception 발생시 공통 메세지 처리
+     * description : 예상치 못한 예외 발생 시 처리 (500 에러)
      *
      * @param e
      * @return response entity
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("COM001", messageUtil.getFormattedMessage("COM001")));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("COM001", messageUtil.getFormattedMessage("COM001")));
     }
 }
