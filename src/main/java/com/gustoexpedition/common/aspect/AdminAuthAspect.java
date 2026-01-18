@@ -1,6 +1,8 @@
 package com.gustoexpedition.common.aspect;
 
 import com.gustoexpedition.common.annotation.RequireAdmin;
+import com.gustoexpedition.common.exception.GustoException;
+import com.gustoexpedition.user.domain.UserInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -36,26 +38,28 @@ public class AdminAuthAspect {
     HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
         .getRequest();
 
-    // TODO: 현재는 JWT가 적용되어 있지 않으므로 검증을 건너뜀, 아래 주석과 같은 코드가 필요
-    // AccessToken에서 사용자 정보 추출 (AccessTokenFilter에서 이미 검증됨)
-    // String accessToken = extractAccessToken(request);
-    log.debug("어드민 권한 검증 건너뛰기 (JWT 미적용): {}", request.getRequestURI());
-    return;
+    // AccessTokenFilter에서 이미 검증하고 Request Attribute에 저장한 사용자 정보 가져오기
+    UserInfo userInfo = (UserInfo) request.getAttribute("userInfo");
 
-    // TODO: JWT 서비스 구현 후 아래 코드 활성화
-    // String accessToken = extractAccessToken(request);
-    // if (accessToken == null) {
-    // log.warn("어드민 권한 검증 실패: AccessToken이 없습니다. {}", request.getRequestURI());
-    // throw new GustoException(requireAdmin.message());
-    // }
-    //
-    // UserInfo userInfo = jwtService.extractUserInfo(accessToken);
-    // if (!userInfo.isAdmin()) {
-    // log.warn("어드민 권한 검증 실패: 사용자 ID={}, URI={}", userInfo.getUserId(),
-    // request.getRequestURI());
-    // throw new GustoException(requireAdmin.message());
-    // }
-    //
-    // log.debug("어드민 권한 검증 통과: {}", request.getRequestURI());
+    if (userInfo == null) {
+      log.warn("어드민 권한 검증 실패: 사용자 정보가 없습니다. {}", request.getRequestURI());
+      throw new GustoException("AUTH003");
+    }
+
+    // 활성화 여부 확인
+    if (!userInfo.getIsActive()) {
+      log.warn("어드민 권한 검증 실패: 비활성화된 사용자. userNum={}, URI={}", userInfo.getUserNum(),
+          request.getRequestURI());
+      throw new GustoException("AUTH003");
+    }
+
+    // 어드민 권한 확인
+    if (!userInfo.isAdmin()) {
+      log.warn("어드민 권한 검증 실패: 사용자 userNum={}, role={}, URI={}", userInfo.getUserNum(),
+          userInfo.getRole(), request.getRequestURI());
+      throw new GustoException("AUTH003");
+    }
+
+    log.debug("어드민 권한 검증 통과: userNum={}, URI={}", userInfo.getUserNum(), request.getRequestURI());
   }
 }

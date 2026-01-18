@@ -1,6 +1,8 @@
 package com.gustoexpedition.common.filter;
 
 import com.gustoexpedition.common.exception.GustoException;
+import com.gustoexpedition.user.application.service.JwtService;
+import com.gustoexpedition.user.domain.UserInfo;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -21,29 +22,31 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * packageName    : com.gustoexpedition.common.filter
- * fileName       : AccessTokenFilter
- * author         : fddsg
- * date           : 2026-01-15
- * description    : AccessToken 검증 필터 (화이트리스트 제외)
+ * packageName : com.gustoexpedition.common.filter
+ * fileName : AccessTokenFilter
+ * author : fddsg
+ * date : 2026-01-15
+ * description : AccessToken 검증 필터 (화이트리스트 제외)
  * 
  * Spring Security 마이그레이션 가이드:
  * 1. OncePerRequestFilter를 상속하므로 Spring Security FilterChain에 바로 통합 가능
  * 2. FilterConfig의 FilterRegistrationBean을 제거하고 SecurityConfig에서 사용:
  * 
- *    @Configuration
- *    @EnableWebSecurity
- *    public class SecurityConfig {
- *        @Bean
- *        public SecurityFilterChain filterChain(HttpSecurity http, AccessTokenFilter accessTokenFilter) {
- *            http
- *                .addFilterBefore(accessTokenFilter, UsernamePasswordAuthenticationFilter.class)
- *                // ... 기타 설정
- *            return http.build();
- *        }
- *    }
+ * @Configuration
+ * @EnableWebSecurity
+ *                    public class SecurityConfig {
+ * @Bean
+ *       public SecurityFilterChain filterChain(HttpSecurity http,
+ *       AccessTokenFilter accessTokenFilter) {
+ *       http
+ *       .addFilterBefore(accessTokenFilter,
+ *       UsernamePasswordAuthenticationFilter.class)
+ *       // ... 기타 설정
+ *       return http.build();
+ *       }
+ *       }
  * 
- * 3. 화이트리스트는 SecurityConfig의 permitAll()로도 관리 가능 (선택사항)
+ *       3. 화이트리스트는 SecurityConfig의 permitAll()로도 관리 가능 (선택사항)
  */
 @Slf4j
 @Component
@@ -55,27 +58,27 @@ public class AccessTokenFilter extends OncePerRequestFilter {
     private List<String> whitelist = new ArrayList<>();
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final Environment environment;
-    
+    private final JwtService jwtService;
+
+    public AccessTokenFilter(Environment environment, JwtService jwtService) {
+        this.environment = environment;
+        this.jwtService = jwtService;
+    }
+
     // Swagger UI 경로 (개발 환경에서만 추가)
     private static final List<String> SWAGGER_UI_PATHS = Arrays.asList(
-        "/swagger-ui/**",
-        "/swagger-ui.html",
-        "/v3/api-docs/**",
-        "/swagger-resources/**",
-        "/webjars/**"
-    );
-    
-    public AccessTokenFilter(Environment environment) {
-        this.environment = environment;
-    }
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**",
+            "/swagger-resources/**",
+            "/webjars/**");
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
-        
+            FilterChain filterChain) throws ServletException, IOException {
+
         String requestPath = request.getRequestURI();
         String requestMethod = request.getMethod();
 
@@ -88,16 +91,25 @@ public class AccessTokenFilter extends OncePerRequestFilter {
 
         // AccessToken 검증
         String accessToken = extractAccessToken(request);
-        
+
         if (accessToken == null || accessToken.isEmpty()) {
             log.warn("AccessToken이 없습니다: {} {}", requestMethod, requestPath);
             throw new GustoException("AUTH001"); // AccessToken이 필요합니다
         }
 
-        // TODO: 실제 JWT 검증 로직 구현
-        if (!isValidToken(accessToken)) {
+        // JWT 검증
+        if (!jwtService.validateToken(accessToken)) {
             log.warn("유효하지 않은 AccessToken: {} {}", requestMethod, requestPath);
             throw new GustoException("AUTH002"); // 유효하지 않은 AccessToken입니다
+        }
+
+        // 사용자 정보를 Request Attribute에 저장 (AdminAuthAspect에서 사용)
+        try {
+            UserInfo userInfo = jwtService.extractUserInfo(accessToken);
+            request.setAttribute("userInfo", userInfo);
+        } catch (Exception e) {
+            log.warn("사용자 정보 추출 실패: {} {}", requestMethod, requestPath, e);
+            throw new GustoException("AUTH002");
         }
 
         // 검증 통과
@@ -111,16 +123,16 @@ public class AccessTokenFilter extends OncePerRequestFilter {
      * - Actuator 등은 모든 메서드 허용
      */
     private boolean isWhitelisted(String requestPath, String requestMethod) {
-        
+
         List<String> allowList = getAllowlist();
-        
+
         for (String pattern : allowList) {
             // 패턴이 "METHOD:경로" 형식인지 확인
             if (pattern.contains(":")) {
                 String[] parts = pattern.split(":", 2);
                 String method = parts[0];
                 String path = parts[1];
-                
+
                 if (method.equalsIgnoreCase(requestMethod) && pathMatcher.match(path, requestPath)) {
                     return true;
                 }
@@ -136,7 +148,7 @@ public class AccessTokenFilter extends OncePerRequestFilter {
                 }
             }
         }
-        
+
         return false;
     }
 
@@ -145,8 +157,8 @@ public class AccessTokenFilter extends OncePerRequestFilter {
      */
     private boolean isStaticResourcePath(String pattern) {
         return pattern.startsWith("/.well-known") ||
-               pattern.equals("/favicon.ico") ||
-               pattern.equals("/robots.txt");
+                pattern.equals("/favicon.ico") ||
+                pattern.equals("/robots.txt");
     }
 
     /**
@@ -154,22 +166,12 @@ public class AccessTokenFilter extends OncePerRequestFilter {
      */
     private String extractAccessToken(HttpServletRequest request) {
         String authorization = request.getHeader("Authorization");
-        
+
         if (authorization != null && authorization.startsWith("Bearer ")) {
             return authorization.substring(7);
         }
-        
-        return null;
-    }
 
-    /**
-     * AccessToken 유효성 검증
-     * TODO: 실제 JWT 검증 로직 구현
-     */
-    private boolean isValidToken(String token) {
-        // TODO: JWT 검증 로직 구현
-        // 예: JWT 서명 검증, 만료 시간 확인 등
-        return token != null && !token.isEmpty();
+        return null;
     }
 
     /**

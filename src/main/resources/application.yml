@@ -54,16 +54,12 @@ gusto:
       - "/.well-known/**"
       - "/favicon.ico"
       - "/robots.txt"
-      # 로그인 필요 없는 api
-      - "/api/admin/ingredient/createIngredient"
-      - "/api/admin/ingredient/createIngredientI18n"
-      - "/api/admin/ingredient/createAlias"
-      - "/api/admin/ingredient/selectById"
-      - "/api/admin/ingredient/updateIngredient"
-      - "/api/admin/ingredient/updateIngredientI18n"
-      - "/api/admin/ingredient/updateAliasAll"
-      - "/api/admin/ingredient/updateAlias"
-      - "/api/admin/ingredient/deleteIngredient"
-      - "/api/admin/ingredient/deleteIngredientI18n"
-      - "/api/admin/ingredient/deleteAliasAll"
-      - "/api/admin/ingredient/deleteAlias"
+      # 인증 관련 API (로그인, 토큰 갱신)
+      - "/api/auth/login"
+      - "/api/auth/refresh"
+      # 회원가입 (인증 불필요)
+      - "/api/user/signup"
+    jwt:
+      secret: ${JWT_SECRET:your-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
+      access-token-expiration: 600000
+      refresh-token-expiration: 604800000
