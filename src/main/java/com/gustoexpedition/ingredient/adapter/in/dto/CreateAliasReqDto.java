@@ -16,7 +16,7 @@ import java.util.List;
  * fileName       : CreateAliasReqDto
  * author         : fddsg
  * date           : 2026-01-16
- * description    : 재료 별칭 생성 요청 DTO
+ * description    : 재료(ingredient) 별칭 생성 요청 DTO
  */
 @Getter
 @Setter
@@ -32,6 +32,6 @@ public class CreateAliasReqDto {
     private String locale;
 
     @NotEmpty(message = "ALAIS001")
-    @Schema(description = "별칭 목록", example = "[\"방울토마토\", \"체리토마토\"]", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "재료 별칭 목록", example = "[\"방울토마토\", \"체리토마토\"]", requiredMode = Schema.RequiredMode.REQUIRED)
     private List<String> aliases;
 }

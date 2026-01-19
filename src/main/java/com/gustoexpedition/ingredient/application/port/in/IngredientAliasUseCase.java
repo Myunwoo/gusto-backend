@@ -49,7 +49,7 @@ public interface IngredientAliasUseCase {
    * author : fddsg
    * description : 재료 별칭 개별 삭제
    *
-   * @param aliasId 별칭 ID
+   * @param aliasId 재료 별칭 ID
    * @return 재료 별칭 개별 삭제 응답
    */
   DeleteAliasResDto deleteAlias(Long aliasId);

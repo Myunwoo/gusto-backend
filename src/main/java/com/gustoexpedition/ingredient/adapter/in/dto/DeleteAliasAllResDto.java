@@ -9,7 +9,7 @@ import lombok.Getter;
  * fileName       : DeleteAliasAllResDto
  * author         : fddsg
  * date           : 2026-01-16
- * description    : 재료 별칭 일괄 삭제 응답 DTO
+ * description    : 재료(ingredient) 별칭 일괄 삭제 응답 DTO
  */
 @Getter
 @AllArgsConstructor

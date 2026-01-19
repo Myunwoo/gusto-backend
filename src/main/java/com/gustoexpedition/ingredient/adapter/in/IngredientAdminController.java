@@ -54,7 +54,7 @@ public class IngredientAdminController {
         }
 
         @RequestMapping(method = RequestMethod.POST, value = "/createAlias", produces = { "application/json" })
-        @Operation(summary = "재료 별칭 생성", description = "특정 재료의 특정 locale에 별칭을 추가합니다.")
+        @Operation(summary = "재료 별칭 생성", description = "특정 재료(ingredient)의 특정 locale에 재료 별칭을 추가합니다.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "재료 별칭 생성 성공", content = @Content(schema = @Schema(implementation = CreateAliasResDto.class))),
                         @ApiResponse(responseCode = "400", description = "잘못된 요청 (재료 없음, locale 정보 없음, 유효성 검증 실패 등)", content = @Content),
@@ -109,7 +109,7 @@ public class IngredientAdminController {
         }
 
         @RequestMapping(method = RequestMethod.POST, value = "/updateAliasAll", produces = { "application/json" })
-        @Operation(summary = "재료 별칭 일괄 수정", description = "특정 재료의 특정 locale에 있는 모든 별칭을 일괄 수정합니다 (기존 별칭 삭제 후 새로 추가).")
+        @Operation(summary = "재료 별칭 일괄 수정", description = "특정 재료(ingredient)의 특정 locale에 있는 모든 재료 별칭을 일괄 수정합니다 (기존 재료 별칭 삭제 후 새로 추가).")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "재료 별칭 일괄 수정 성공", content = @Content(schema = @Schema(implementation = UpdateAliasAllResDto.class))),
                         @ApiResponse(responseCode = "400", description = "잘못된 요청 (재료 없음, locale 정보 없음, 유효성 검증 실패 등)", content = @Content),
@@ -121,7 +121,7 @@ public class IngredientAdminController {
         }
 
         @RequestMapping(method = RequestMethod.POST, value = "/updateAlias", produces = { "application/json" })
-        @Operation(summary = "재료 별칭 개별 수정", description = "특정 별칭을 개별적으로 수정합니다.")
+        @Operation(summary = "재료 별칭 개별 수정", description = "특정 재료(ingredient) 별칭을 개별적으로 수정합니다.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "재료 별칭 개별 수정 성공", content = @Content(schema = @Schema(implementation = UpdateAliasResDto.class))),
                         @ApiResponse(responseCode = "400", description = "잘못된 요청 (별칭 없음, 중복된 별칭, 유효성 검증 실패 등)", content = @Content),
@@ -161,7 +161,7 @@ public class IngredientAdminController {
         }
 
         @RequestMapping(method = RequestMethod.POST, value = "/deleteAliasAll", produces = { "application/json" })
-        @Operation(summary = "재료 별칭 일괄 삭제", description = "특정 재료의 특정 locale에 있는 모든 별칭을 일괄 삭제합니다.")
+        @Operation(summary = "재료 별칭 일괄 삭제", description = "특정 재료(ingredient)의 특정 locale에 있는 모든 재료 별칭을 일괄 삭제합니다.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "재료 별칭 일괄 삭제 성공", content = @Content(schema = @Schema(implementation = DeleteAliasAllResDto.class))),
                         @ApiResponse(responseCode = "400", description = "잘못된 요청 (재료 없음, locale 정보 없음, 별칭 없음 등)", content = @Content),
@@ -176,14 +176,14 @@ public class IngredientAdminController {
         }
 
         @RequestMapping(method = RequestMethod.POST, value = "/deleteAlias", produces = { "application/json" })
-        @Operation(summary = "재료 별칭 개별 삭제", description = "특정 별칭을 개별적으로 삭제합니다.")
+        @Operation(summary = "재료 별칭 개별 삭제", description = "특정 재료(ingredient) 별칭을 개별적으로 삭제합니다.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "재료 별칭 개별 삭제 성공", content = @Content(schema = @Schema(implementation = DeleteAliasResDto.class))),
-                        @ApiResponse(responseCode = "400", description = "잘못된 요청 (별칭 없음 등)", content = @Content),
+                        @ApiResponse(responseCode = "400", description = "잘못된 요청 (재료 별칭 없음 등)", content = @Content),
                         @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
         })
         public ResponseEntity<DeleteAliasResDto> deleteAlias(
-                        @Parameter(description = "별칭 ID", required = true, example = "1") @RequestParam("aliasId") Long aliasId) {
+                        @Parameter(description = "재료 별칭 ID", required = true, example = "1") @RequestParam("aliasId") Long aliasId) {
                 DeleteAliasResDto res = ingredientAliasUseCase.deleteAlias(aliasId);
                 return ResponseEntity.ok(res);
         }

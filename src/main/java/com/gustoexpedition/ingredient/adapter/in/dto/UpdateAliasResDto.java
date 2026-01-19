@@ -11,13 +11,13 @@ import java.time.Instant;
  * fileName       : UpdateAliasResDto
  * author         : fddsg
  * date           : 2026-01-16
- * description    : 재료 별칭 개별 수정 응답 DTO
+ * description    : 재료(ingredient) 별칭 개별 수정 응답 DTO
  */
 @Getter
 @AllArgsConstructor
 @Schema(description = "재료 별칭 개별 수정 응답")
 public class UpdateAliasResDto {
-    @Schema(description = "별칭 ID", example = "1")
+    @Schema(description = "재료 별칭 ID", example = "1")
     private Long aliasId;
 
     @Schema(description = "재료 ID", example = "1")
@@ -26,7 +26,7 @@ public class UpdateAliasResDto {
     @Schema(description = "언어 코드", example = "ko-KR")
     private String locale;
 
-    @Schema(description = "수정된 별칭", example = "방울토마토")
+    @Schema(description = "수정된 재료 별칭", example = "방울토마토")
     private String alias;
 
     @Schema(description = "생성 일시", example = "2026-01-16T10:30:00Z")

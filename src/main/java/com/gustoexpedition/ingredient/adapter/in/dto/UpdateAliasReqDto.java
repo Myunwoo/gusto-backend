@@ -13,7 +13,7 @@ import lombok.Setter;
  * fileName       : UpdateAliasReqDto
  * author         : fddsg
  * date           : 2026-01-16
- * description    : 재료 별칭 개별 수정 요청 DTO
+ * description    : 재료(ingredient) 별칭 개별 수정 요청 DTO
  */
 @Getter
 @Setter
@@ -22,11 +22,11 @@ public class UpdateAliasReqDto {
 
     @NotNull(message = "INGR005")
     @Min(value = 1, message = "INGR005")
-    @Schema(description = "별칭 ID", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "재료 별칭 ID", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long aliasId;
 
     @NotBlank(message = "INGR010")
     @Size(max = 100, message = "INGR011")
-    @Schema(description = "수정할 별칭", example = "방울토마토", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "수정할 재료 별칭", example = "방울토마토", requiredMode = Schema.RequiredMode.REQUIRED)
     private String alias;
 }

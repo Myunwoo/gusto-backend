@@ -103,7 +103,7 @@ public class IngredientAdminService implements IngredientAdminUseCase {
                 }
 
                 // 3. 별칭 목록 조회 (locale별로 그룹화, ID 포함)
-                Map<String, List<AliasDto>> aliasesMap = new HashMap<>();
+                Map<String, List<IngredientAliasDto>> aliasesMap = new HashMap<>();
                 List<IngredientAliasEntity> aliasEntities;
 
                 if (locale != null) {
@@ -119,7 +119,7 @@ public class IngredientAdminService implements IngredientAdminUseCase {
                                 .collect(Collectors.groupingBy(
                                                 IngredientAliasEntity::getLocale,
                                                 Collectors.mapping(
-                                                                entity -> new AliasDto(entity.getAliasId(),
+                                                                entity -> new IngredientAliasDto(entity.getAliasId(),
                                                                                 entity.getAlias()),
                                                                 Collectors.toList())));
 
