@@ -13,7 +13,7 @@ import java.time.Instant;
  * description : 사용자 엔티티
  */
 @Entity
-@Table(name = "user")
+@Table(name = "mem_gusto")
 @EntityListeners(UpdatedAtListener.class)
 public class UserEntity {
 
@@ -35,7 +35,7 @@ public class UserEntity {
   private String nickname;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "role", nullable = false)
+  @Column(name = "role", nullable = false, length = 20)
   private UserRole role = UserRole.USER;
 
   @Column(name = "is_active", nullable = false)
@@ -126,6 +126,9 @@ public class UserEntity {
   }
 
   public void setRole(UserRole role) {
+    if (role == null) {
+      throw new IllegalArgumentException("Role cannot be null");
+    }
     this.role = role;
   }
 

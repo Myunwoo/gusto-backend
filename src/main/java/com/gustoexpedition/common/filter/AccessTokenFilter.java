@@ -82,6 +82,13 @@ public class AccessTokenFilter extends OncePerRequestFilter {
         String requestPath = request.getRequestURI();
         String requestMethod = request.getMethod();
 
+        // OPTIONS 요청은 CORS preflight이므로 인증 없이 통과
+        if ("OPTIONS".equalsIgnoreCase(requestMethod)) {
+            log.debug("OPTIONS 요청 (CORS preflight): {} {}", requestMethod, requestPath);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 화이트리스트 체크
         if (isWhitelisted(requestPath, requestMethod)) {
             log.debug("화이트리스트 경로 접근: {} {}", requestMethod, requestPath);
@@ -166,9 +173,18 @@ public class AccessTokenFilter extends OncePerRequestFilter {
      */
     private String extractAccessToken(HttpServletRequest request) {
         String authorization = request.getHeader("Authorization");
-
         if (authorization != null && authorization.startsWith("Bearer ")) {
             return authorization.substring(7);
+        }
+
+        // 2. 쿠키에서 Access Token 추출 (httpOnly 쿠키 지원)
+        jakarta.servlet.http.Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (jakarta.servlet.http.Cookie cookie : cookies) {
+                if ("GEAT".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
         }
 
         return null;

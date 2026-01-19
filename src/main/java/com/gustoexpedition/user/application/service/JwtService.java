@@ -91,7 +91,17 @@ public class JwtService {
       String roleStr = claims.get("role", String.class);
       Boolean isActive = claims.get("isActive", Boolean.class);
 
-      UserRole role = roleStr != null ? UserRole.valueOf(roleStr) : UserRole.USER;
+      // Role 검증: UserRole enum에 정의된 값만 허용
+      UserRole role = UserRole.USER; // 기본값
+      if (roleStr != null && !roleStr.isEmpty()) {
+        try {
+          role = UserRole.valueOf(roleStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+          log.warn("JWT 토큰에 유효하지 않은 role 값: {}", roleStr);
+          // 기본값인 USER로 설정
+          role = UserRole.USER;
+        }
+      }
 
       return new UserInfo(userId, userNum, email, role, isActive);
     } catch (Exception e) {

@@ -29,3 +29,11 @@ spring:
 
 LOG_FORMAT: ${LOG_FORMAT:PLAIN}
 LOG_PATH: ${LOG_PATH:-/var/log/gusto}
+
+gusto:
+  cors:
+    # 프로덕션 환경: 프로덕션 origin만 허용 (환경 변수로 설정)
+    allowed-origins:
+      - ${CORS_ALLOWED_ORIGIN:}
+      - ${CORS_ALLOWED_ORIGIN_2:}
+    allow-credentials: true

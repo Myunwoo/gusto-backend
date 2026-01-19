@@ -29,3 +29,11 @@ spring:
 
 LOG_FORMAT: PLAIN
 LOG_PATH: ./logs
+
+gusto:
+  cors:
+    # 로컬 환경: localhost:3000 명시적으로 허용 (credentials 사용을 위해)
+    # CORS 스펙: credentials를 사용하려면 와일드카드(*)가 아닌 구체적인 origin이어야 함
+    allowed-origins:
+      - http://localhost:3000
+    allow-credentials: true

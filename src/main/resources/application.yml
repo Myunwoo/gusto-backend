@@ -63,3 +63,11 @@ gusto:
       secret: ${JWT_SECRET:your-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
       access-token-expiration: 600000
       refresh-token-expiration: 604800000
+  cors:
+    # 기본 CORS 설정 (환경별로 override)
+    allowed-origins: []
+    allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+    allowed-headers: "*"
+    exposed-headers: Authorization,Content-Type
+    allow-credentials: true
+    max-age: 3600

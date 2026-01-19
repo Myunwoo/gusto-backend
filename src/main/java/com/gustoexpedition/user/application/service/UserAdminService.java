@@ -92,9 +92,10 @@ public class UserAdminService implements UserAdminUseCase {
     // 역할 수정 (제공된 경우에만)
     if (req.getRole() != null && !req.getRole().isEmpty()) {
       try {
-        user.setRole(UserRole.valueOf(req.getRole().toUpperCase()));
+        UserRole role = UserRole.valueOf(req.getRole().toUpperCase());
+        user.setRole(role);
       } catch (IllegalArgumentException e) {
-        throw new GustoException("USER009");
+        throw new GustoException("USER009"); // 유효하지 않은 역할입니다
       }
     }
 

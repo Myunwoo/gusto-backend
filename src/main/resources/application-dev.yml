@@ -29,3 +29,11 @@ spring:
 
 LOG_FORMAT: ${LOG_FORMAT:PLAIN}
 LOG_PATH: ${LOG_PATH:./logs}
+
+gusto:
+  cors:
+    # 개발 환경: 개발 서버 origin 허용
+    allowed-origins:
+      - ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
+      - ${CORS_ALLOWED_ORIGIN_2:}
+    allow-credentials: true
