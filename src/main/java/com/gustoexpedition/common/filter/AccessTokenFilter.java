@@ -1,6 +1,6 @@
 package com.gustoexpedition.common.filter;
 
-import com.gustoexpedition.common.exception.GustoException;
+import com.gustoexpedition.config.CorsConfig;
 import com.gustoexpedition.user.application.service.JwtService;
 import com.gustoexpedition.user.domain.UserInfo;
 import jakarta.servlet.FilterChain;
@@ -12,6 +12,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -59,10 +61,12 @@ public class AccessTokenFilter extends OncePerRequestFilter {
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final Environment environment;
     private final JwtService jwtService;
+    private final CorsConfig corsConfig;
 
-    public AccessTokenFilter(Environment environment, JwtService jwtService) {
+    public AccessTokenFilter(Environment environment, JwtService jwtService, CorsConfig corsConfig) {
         this.environment = environment;
         this.jwtService = jwtService;
+        this.corsConfig = corsConfig;
     }
 
     // Swagger UI 경로 (개발 환경에서만 추가)
@@ -82,45 +86,95 @@ public class AccessTokenFilter extends OncePerRequestFilter {
         String requestPath = request.getRequestURI();
         String requestMethod = request.getMethod();
 
-        // OPTIONS 요청은 CORS preflight이므로 인증 없이 통과
-        if ("OPTIONS".equalsIgnoreCase(requestMethod)) {
-            log.debug("OPTIONS 요청 (CORS preflight): {} {}", requestMethod, requestPath);
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        // 화이트리스트 체크
-        if (isWhitelisted(requestPath, requestMethod)) {
-            log.debug("화이트리스트 경로 접근: {} {}", requestMethod, requestPath);
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        // AccessToken 검증
-        String accessToken = extractAccessToken(request);
-
-        if (accessToken == null || accessToken.isEmpty()) {
-            log.warn("AccessToken이 없습니다: {} {}", requestMethod, requestPath);
-            throw new GustoException("AUTH001"); // AccessToken이 필요합니다
-        }
-
-        // JWT 검증
-        if (!jwtService.validateToken(accessToken)) {
-            log.warn("유효하지 않은 AccessToken: {} {}", requestMethod, requestPath);
-            throw new GustoException("AUTH002"); // 유효하지 않은 AccessToken입니다
-        }
-
-        // 사용자 정보를 Request Attribute에 저장 (AdminAuthAspect에서 사용)
         try {
-            UserInfo userInfo = jwtService.extractUserInfo(accessToken);
-            request.setAttribute("userInfo", userInfo);
-        } catch (Exception e) {
-            log.warn("사용자 정보 추출 실패: {} {}", requestMethod, requestPath, e);
-            throw new GustoException("AUTH002");
-        }
+            // OPTIONS 요청은 CORS preflight이므로 인증 없이 통과
+            if ("OPTIONS".equalsIgnoreCase(requestMethod)) {
+                log.debug("OPTIONS 요청 (CORS preflight): {} {}", requestMethod, requestPath);
+                filterChain.doFilter(request, response);
+                return;
+            }
 
-        // 검증 통과
-        filterChain.doFilter(request, response);
+            // 화이트리스트 체크
+            if (isWhitelisted(requestPath, requestMethod)) {
+                log.debug("화이트리스트 경로 접근: {} {}", requestMethod, requestPath);
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // AccessToken 검증
+            String accessToken = extractAccessToken(request);
+
+            if (accessToken == null || accessToken.isEmpty()) {
+                log.warn("AccessToken이 없습니다: {} {}", requestMethod, requestPath);
+                sendUnauthorized(response, request);
+                return;
+            }
+
+            // JWT 검증
+            if (!jwtService.validateToken(accessToken)) {
+                log.warn("유효하지 않은 AccessToken: {} {}", requestMethod, requestPath);
+                sendUnauthorized(response, request);
+                return;
+            }
+
+            // 사용자 정보를 Request Attribute에 저장 (AdminAuthAspect에서 사용)
+            try {
+                UserInfo userInfo = jwtService.extractUserInfo(accessToken);
+                request.setAttribute("userInfo", userInfo);
+            } catch (Exception e) {
+                log.warn("사용자 정보 추출 실패: {} {}", requestMethod, requestPath, e);
+                sendUnauthorized(response, request);
+                return;
+            }
+
+            // 검증 통과
+            filterChain.doFilter(request, response);
+        } catch (Exception e) {
+            log.error("필터 처리 중 예상치 못한 오류 발생: {} {}", requestMethod, requestPath, e);
+            sendUnauthorized(response, request);
+        }
+    }
+
+    /**
+     * 401 Unauthorized 응답 전송
+     */
+    private void sendUnauthorized(HttpServletResponse response, HttpServletRequest request) throws IOException {
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+
+        // CORS 헤더 추가 (에러 응답에도 필요)
+        String origin = getCorsOrigin(request);
+        if (origin != null && !"*".equals(origin)) {
+            response.setHeader("Access-Control-Allow-Origin", origin);
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+        }
+        response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+        response.setHeader("Access-Control-Allow-Headers", "*");
+
+        response.getWriter().write("{}");
+    }
+
+    /**
+     * CORS Origin 헤더 값 반환
+     * 1. CorsConfig에서 설정된 origin 사용
+     * 2. 설정이 없으면 request의 Origin 헤더 사용 (개발 편의성)
+     */
+    private String getCorsOrigin(HttpServletRequest request) {
+        List<String> allowedOrigins = corsConfig.getAllowedOrigins();
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+            // 설정된 origin 중 첫 번째 사용
+            String configuredOrigin = allowedOrigins.get(0);
+            // 요청의 Origin과 일치하는지 확인 (보안)
+            String requestOrigin = request.getHeader("Origin");
+            if (requestOrigin != null && allowedOrigins.contains(requestOrigin)) {
+                return requestOrigin;
+            }
+            return configuredOrigin;
+        }
+        // 설정이 없으면 요청의 Origin 사용 (개발 편의성)
+        String requestOrigin = request.getHeader("Origin");
+        return requestOrigin != null ? requestOrigin : "*";
     }
 
     /**

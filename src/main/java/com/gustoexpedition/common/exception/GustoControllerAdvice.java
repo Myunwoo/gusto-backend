@@ -41,10 +41,9 @@ public class GustoControllerAdvice {
     }
 
     /**
-     * methodName : handleCmcException
+     * methodName : handleGustoException
      * author : IM HYUN WOO
      * description : gusto exception 발생 시 처리
-     * 인증 관련 에러 코드(AUTH001, AUTH002)는 401로 반환, 나머지는 400으로 반환
      *
      * @param e
      * @return response entity
@@ -52,17 +51,8 @@ public class GustoControllerAdvice {
     @ExceptionHandler(GustoException.class)
     public ResponseEntity<ErrorResponse> handleGustoException(GustoException e) {
         String errorCode = e.getMessage();
-        HttpStatus status = isAuthenticationError(errorCode) ? HttpStatus.UNAUTHORIZED : HttpStatus.BAD_REQUEST;
-        
-        return ResponseEntity.status(status)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(errorCode, messageUtil.getFormattedMessage(errorCode)));
-    }
-
-    /**
-     * 인증 관련 에러 코드인지 확인
-     */
-    private boolean isAuthenticationError(String errorCode) {
-        return "AUTH001".equals(errorCode) || "AUTH002".equals(errorCode);
     }
 
     /**
