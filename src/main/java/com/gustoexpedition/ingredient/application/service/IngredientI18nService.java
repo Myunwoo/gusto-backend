@@ -6,7 +6,6 @@ import com.gustoexpedition.ingredient.adapter.out.persistence.IngredientAliasJpa
 import com.gustoexpedition.ingredient.adapter.out.persistence.IngredientI18nJpaRepository;
 import com.gustoexpedition.ingredient.adapter.out.persistence.IngredientJpaRepository;
 import com.gustoexpedition.ingredient.application.port.in.IngredientI18nUseCase;
-import com.gustoexpedition.ingredient.domain.IngredientValidator;
 import com.gustoexpedition.ingredient.entity.IngredientAliasEntity;
 import com.gustoexpedition.ingredient.entity.IngredientI18nEntity;
 import com.gustoexpedition.ingredient.entity.IngredientI18nId;
@@ -34,26 +33,23 @@ public class IngredientI18nService implements IngredientI18nUseCase {
   @Override
   @Transactional
   public CreateIngredientI18nResDto createIngredientI18n(CreateIngredientI18nReqDto req) {
-    // 1. 재료 존재 확인
+    // 재료 존재 확인
     ingredientJpaRepository.findById(req.getIngredientId())
         .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
 
-    // 2. 입력 검증
-    IngredientValidator.validateName(req.getName());
-
-    // 3. 중복 체크 (같은 locale과 name 조합)
+    // 중복 체크 (같은 locale과 name 조합)
     ingredientI18nJpaRepository.findByLocaleAndName(req.getLocale(), req.getName().trim())
         .ifPresent(existing -> {
           throw new GustoException("INGR002");
         });
 
-    // 4. 같은 재료의 같은 locale이 이미 존재하는지 확인
+    // 같은 재료의 같은 locale이 이미 존재하는지 확인
     ingredientI18nJpaRepository.findById(new IngredientI18nId(req.getIngredientId(), req.getLocale()))
         .ifPresent(existing -> {
           throw new GustoException("INGR003");
         });
 
-    // 5. IngredientI18n 엔티티 생성 및 저장
+    // IngredientI18n 엔티티 생성 및 저장
     IngredientI18nEntity i18nEntity = new IngredientI18nEntity(
         req.getIngredientId(),
         req.getLocale(),
@@ -61,7 +57,7 @@ public class IngredientI18nService implements IngredientI18nUseCase {
         req.getDescription());
     IngredientI18nEntity savedI18n = ingredientI18nJpaRepository.save(i18nEntity);
 
-    // 6. 응답 DTO 생성
+    // 응답 DTO 생성
     return new CreateIngredientI18nResDto(
         savedI18n.getIngredientId(),
         savedI18n.getLocale(),
@@ -74,23 +70,15 @@ public class IngredientI18nService implements IngredientI18nUseCase {
   @Override
   @Transactional
   public UpdateIngredientI18nResDto updateIngredientI18n(UpdateIngredientI18nReqDto req) {
-    // 1. 재료 존재 확인
+    // 재료 존재 확인
     ingredientJpaRepository.findById(req.getIngredientId())
         .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
 
-    // 2. 입력 검증
-    IngredientValidator.validateName(req.getName());
-
-    // 3. i18n 정보 조회
+    // i18n 정보 조회
     IngredientI18nEntity i18nEntity = ingredientI18nJpaRepository.findById(
-        new IngredientI18nId(req.getIngredientId(), req.getLocale())).orElseThrow(() -> new GustoException("INGR007")); // 재료의
-                                                                                                                        // locale
-                                                                                                                        // 정보를
-                                                                                                                        // 찾을
-                                                                                                                        // 수
-                                                                                                                        // 없습니다.
+        new IngredientI18nId(req.getIngredientId(), req.getLocale())).orElseThrow(() -> new GustoException("INGR007"));
 
-    // 4. 중복 체크 (다른 재료의 같은 locale과 name 조합인지 확인)
+    // 중복 체크 (다른 재료의 같은 locale과 name 조합인지 확인)
     ingredientI18nJpaRepository.findByLocaleAndName(req.getLocale(), req.getName().trim())
         .ifPresent(existing -> {
           // 자기 자신이 아닌 경우에만 중복 에러
@@ -100,14 +88,14 @@ public class IngredientI18nService implements IngredientI18nUseCase {
           }
         });
 
-    // 5. 엔티티 수정
+    // 엔티티 수정
     i18nEntity.setName(req.getName().trim());
     i18nEntity.setDescription(req.getDescription());
 
-    // 6. 저장
+    // 저장
     IngredientI18nEntity updatedI18n = ingredientI18nJpaRepository.save(i18nEntity);
 
-    // 7. 응답 DTO 생성
+    // 응답 DTO 생성
     return new UpdateIngredientI18nResDto(
         updatedI18n.getIngredientId(),
         updatedI18n.getLocale(),
@@ -125,8 +113,7 @@ public class IngredientI18nService implements IngredientI18nUseCase {
 
     // 2. i18n 정보 조회
     IngredientI18nEntity i18nEntity = ingredientI18nJpaRepository.findById(
-        new IngredientI18nId(ingredientId, locale)).orElseThrow(() -> new GustoException("INGR007")); // 재료의 locale 정보를
-                                                                                                      // 찾을 수 없습니다.
+        new IngredientI18nId(ingredientId, locale)).orElseThrow(() -> new GustoException("INGR007"));
 
     // 3. 관련 별칭도 함께 삭제 (해당 locale의 별칭)
     List<IngredientAliasEntity> aliasList = ingredientAliasJpaRepository

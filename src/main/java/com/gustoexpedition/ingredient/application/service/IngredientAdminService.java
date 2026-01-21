@@ -7,7 +7,6 @@ import com.gustoexpedition.ingredient.adapter.out.persistence.IngredientEdgeJpaR
 import com.gustoexpedition.ingredient.adapter.out.persistence.IngredientI18nJpaRepository;
 import com.gustoexpedition.ingredient.adapter.out.persistence.IngredientJpaRepository;
 import com.gustoexpedition.ingredient.application.port.in.IngredientAdminUseCase;
-import com.gustoexpedition.ingredient.domain.IngredientValidator;
 import com.gustoexpedition.ingredient.entity.IngredientAliasEntity;
 import com.gustoexpedition.ingredient.entity.IngredientEdgeEntity;
 import com.gustoexpedition.ingredient.entity.IngredientEntity;
@@ -43,17 +42,19 @@ public class IngredientAdminService implements IngredientAdminUseCase {
         @Override
         @Transactional
         public CreateIngredientBasicResDto createIngredient(CreateIngredientBasicReqDto req) {
-                // 1. 입력 검증
-                IngredientValidator.validateName(req.getName());
 
-                // 2. Ingredient 엔티티 생성 및 저장 (기본정보만)
+                if (ingredientJpaRepository.findByName(req.getName()).isPresent()) {
+                        throw new GustoException("INGR013");
+                }
+
+                // Ingredient 엔티티 생성 및 저장 (기본정보만)
                 IngredientEntity ingredientEntity = new IngredientEntity(
                                 req.getName().trim(),
                                 req.getThumbnailUrl(),
                                 req.getIsActive());
                 IngredientEntity savedIngredient = ingredientJpaRepository.save(ingredientEntity);
 
-                // 3. 응답 DTO 생성
+                // 응답 DTO 생성
                 return new CreateIngredientBasicResDto(
                                 savedIngredient.getIngredientId(),
                                 savedIngredient.getName(),
@@ -171,22 +172,23 @@ public class IngredientAdminService implements IngredientAdminUseCase {
         @Override
         @Transactional
         public UpdateIngredientBasicResDto updateIngredient(UpdateIngredientBasicReqDto req) {
-                // 1. 재료 존재 확인
+                // 재료 존재 확인
                 IngredientEntity ingredient = ingredientJpaRepository.findById(req.getIngredientId())
                                 .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
 
-                // 2. 입력 검증
-                IngredientValidator.validateName(req.getName());
+                if (ingredientJpaRepository.findByName(req.getName()).isPresent()) {
+                        throw new GustoException("INGR013");
+                }
 
-                // 3. 엔티티 수정
+                // 엔티티 수정
                 ingredient.setName(req.getName().trim());
                 ingredient.setThumbnailUrl(req.getThumbnailUrl());
                 ingredient.setIsActive(req.getIsActive() != null ? req.getIsActive() : true);
 
-                // 4. 저장 (JPA가 자동으로 updated_at 갱신)
+                // 저장 (JPA가 자동으로 updated_at 갱신)
                 IngredientEntity updatedIngredient = ingredientJpaRepository.save(ingredient);
 
-                // 5. 응답 DTO 생성
+                // 응답 DTO 생성
                 return new UpdateIngredientBasicResDto(
                                 updatedIngredient.getIngredientId(),
                                 updatedIngredient.getName(),
