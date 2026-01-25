@@ -59,12 +59,47 @@ public class IngredientEdgeService implements IngredientEdgeUseCase {
       throw new GustoException("EDGE010"); // 이미 존재하는 관계입니다.
     }
 
-    // 4. Edge 엔티티 생성 및 저장 (생성자에서 자동으로 정규화)
+    // 4. 관계 타입 검증
+    IngredientEdgeEntity.IngredientRelationType relationType = req.getRelationType();
+    if (relationType == null) {
+      throw new GustoException("EDGE003"); // 관계 타입은 필수입니다.
+    }
+    // Enum 값이 유효한지 확인 (PAIR_WELL, AVOID, NEUTRAL 중 하나인지)
+    boolean isValidType = false;
+    for (IngredientEdgeEntity.IngredientRelationType validType : IngredientEdgeEntity.IngredientRelationType.values()) {
+      if (validType == relationType) {
+        isValidType = true;
+        break;
+      }
+    }
+    if (!isValidType) {
+      throw new GustoException("EDGE003"); // 유효하지 않은 관계 타입입니다.
+    }
+
+    // 5. 점수 검증
+    Integer score;
+
+    if (relationType == IngredientEdgeEntity.IngredientRelationType.NEUTRAL) {
+      // NEUTRAL은 점수가 없어도 됨 (0으로 설정)
+      score = 0;
+    } else {
+      // PAIR_WELL 또는 AVOID는 점수 필수
+      if (req.getScore() == null) {
+        throw new GustoException("EDGE004"); // 관계 점수는 필수입니다.
+      }
+
+      score = req.getScore();
+      if (score < 1 || score > 10) {
+        throw new GustoException("EDGE005"); // 관계 점수는 1-10 사이여야 합니다.
+      }
+    }
+
+    // 5. Edge 엔티티 생성 및 저장 (생성자에서 자동으로 정규화)
     IngredientEdgeEntity edgeEntity = new IngredientEdgeEntity(
         req.getFromIngredientId(),
         req.getToIngredientId(),
-        req.getRelationType(),
-        req.getScore(),
+        relationType,
+        score,
         req.getConfidence(),
         req.getReasonSummary());
     IngredientEdgeEntity savedEdge = ingredientEdgeJpaRepository.save(edgeEntity);
@@ -127,13 +162,48 @@ public class IngredientEdgeService implements IngredientEdgeUseCase {
     IngredientEdgeEntity edge = ingredientEdgeJpaRepository.findById(req.getEdgeId())
         .orElseThrow(() -> new GustoException("EDGE011")); // 관계를 찾을 수 없습니다.
 
-    // 2. 엔티티 수정
-    edge.setRelationType(req.getRelationType());
-    edge.setScore(req.getScore());
+    // 2. 관계 타입 검증
+    IngredientEdgeEntity.IngredientRelationType relationType = req.getRelationType();
+    if (relationType == null) {
+      throw new GustoException("EDGE003"); // 관계 타입은 필수입니다.
+    }
+    // Enum 값이 유효한지 확인 (PAIR_WELL, AVOID, NEUTRAL 중 하나인지)
+    boolean isValidType = false;
+    for (IngredientEdgeEntity.IngredientRelationType validType : IngredientEdgeEntity.IngredientRelationType.values()) {
+      if (validType == relationType) {
+        isValidType = true;
+        break;
+      }
+    }
+    if (!isValidType) {
+      throw new GustoException("EDGE003"); // 유효하지 않은 관계 타입입니다.
+    }
+
+    // 3. 점수 검증
+    Integer score;
+
+    if (relationType == IngredientEdgeEntity.IngredientRelationType.NEUTRAL) {
+      // NEUTRAL은 점수가 없어도 됨 (0으로 설정)
+      score = req.getScore() != null ? req.getScore() : 0;
+    } else {
+      // PAIR_WELL 또는 AVOID는 점수 필수
+      if (req.getScore() == null) {
+        throw new GustoException("EDGE004"); // 관계 점수는 필수입니다.
+      }
+
+      score = req.getScore();
+      if (score < 1 || score > 10) {
+        throw new GustoException("EDGE005"); // 관계 점수는 1-10 사이여야 합니다.
+      }
+    }
+
+    // 4. 엔티티 수정
+    edge.setRelationType(relationType);
+    edge.setScore(score);
     edge.setConfidence(req.getConfidence());
     edge.setReasonSummary(req.getReasonSummary());
 
-    // 3. 저장
+    // 5. 저장
     IngredientEdgeEntity updatedEdge = ingredientEdgeJpaRepository.save(edge);
 
     // 4. 응답 DTO 생성

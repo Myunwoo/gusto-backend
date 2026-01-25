@@ -4,22 +4,12 @@ import com.gustoexpedition.ingredient.adapter.in.dto.*;
 
 public interface IngredientI18nUseCase {
   /**
-   * methodName : createIngredientI18n
-   * author : fddsg
-   * description : 재료 locale별 기본정보 생성 (ingredient_i18n 테이블 저장)
-   *
-   * @param req 재료 locale별 기본정보 요청
-   * @return 재료 locale별 기본정보 응답
-   */
-  CreateIngredientI18nResDto createIngredientI18n(CreateIngredientI18nReqDto req);
-
-  /**
    * methodName : updateIngredientI18n
    * author : fddsg
-   * description : 재료 locale별 기본정보 수정
+   * description : 재료 locale별 기본정보 저장 (upsert: 없으면 생성, 있으면 수정)
    *
-   * @param req 재료 locale별 기본정보 수정 요청
-   * @return 재료 locale별 기본정보 수정 응답
+   * @param req 재료 locale별 기본정보 저장 요청
+   * @return 재료 locale별 기본정보 저장 응답
    */
   UpdateIngredientI18nResDto updateIngredientI18n(UpdateIngredientI18nReqDto req);
 

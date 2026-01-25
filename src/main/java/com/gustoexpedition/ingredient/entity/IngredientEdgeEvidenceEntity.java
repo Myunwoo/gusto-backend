@@ -24,7 +24,7 @@ public class IngredientEdgeEvidenceEntity {
   private Long edgeId;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "evidence_type", nullable = false)
+  @Column(name = "evidence_type", nullable = false, length = 50)
   private EdgeEvidenceType evidenceType;
 
   @Column(name = "title", length = 200)

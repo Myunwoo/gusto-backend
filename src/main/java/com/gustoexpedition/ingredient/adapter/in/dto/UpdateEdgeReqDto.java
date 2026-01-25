@@ -33,11 +33,8 @@ public class UpdateEdgeReqDto {
   @Schema(description = "관계 타입 (PAIR_WELL: 궁합, AVOID: 비궁합, NEUTRAL: 중립)", example = "PAIR_WELL", requiredMode = Schema.RequiredMode.REQUIRED)
   private IngredientEdgeEntity.IngredientRelationType relationType;
 
-  @NotNull(message = "EDGE004")
-  @DecimalMin(value = "-1.000", message = "EDGE005")
-  @DecimalMax(value = "1.000", message = "EDGE005")
-  @Schema(description = "관계 점수 (-1.000 ~ 1.000)", example = "0.700", requiredMode = Schema.RequiredMode.REQUIRED)
-  private BigDecimal score;
+  @Schema(description = "관계 점수 (PAIR_WELL/AVOID: 1-10 필수, NEUTRAL: 선택사항)", example = "5", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+  private Integer score;
 
   @DecimalMin(value = "0.000", message = "EDGE006")
   @DecimalMax(value = "1.000", message = "EDGE006")

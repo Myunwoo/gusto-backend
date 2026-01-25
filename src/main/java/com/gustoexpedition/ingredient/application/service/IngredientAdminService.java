@@ -160,6 +160,7 @@ public class IngredientAdminService implements IngredientAdminUseCase {
                 // 5. 응답 DTO 생성
                 return new SelectIngredientResDto(
                                 ingredient.getIngredientId(),
+                                ingredient.getName(),
                                 localeInfoMap,
                                 ingredient.getThumbnailUrl(),
                                 ingredient.getIsActive(),
@@ -231,6 +232,18 @@ public class IngredientAdminService implements IngredientAdminUseCase {
                 return new DeleteIngredientResDto(
                                 ingredientId,
                                 "재료가 성공적으로 삭제되었습니다.");
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<SelectIngredientListItemDto> selectAll() {
+                List<IngredientEntity> ingredients = ingredientJpaRepository.findAll();
+                return ingredients.stream()
+                                .map(ingredient -> new SelectIngredientListItemDto(
+                                                ingredient.getIngredientId(),
+                                                ingredient.getName(),
+                                                ingredient.getIsActive()))
+                                .collect(Collectors.toList());
         }
 
 }

@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/admin/ingredient")
 @RequiredArgsConstructor
@@ -37,19 +39,6 @@ public class IngredientAdminController {
         public ResponseEntity<CreateIngredientBasicResDto> createIngredient(
                         @Valid @RequestBody CreateIngredientBasicReqDto req) {
                 CreateIngredientBasicResDto res = ingredientAdminUseCase.createIngredient(req);
-                return ResponseEntity.ok(res);
-        }
-
-        @RequestMapping(method = RequestMethod.POST, value = "/createIngredientI18n", produces = { "application/json" })
-        @Operation(summary = "재료 locale별 기본정보 생성", description = "특정 재료에 locale별 기본정보를 추가합니다 (이름, 설명).")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "재료 locale별 기본정보 생성 성공", content = @Content(schema = @Schema(implementation = CreateIngredientI18nResDto.class))),
-                        @ApiResponse(responseCode = "400", description = "잘못된 요청 (재료 없음, 중복된 locale/이름 조합, 유효성 검증 실패 등)", content = @Content),
-                        @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
-        })
-        public ResponseEntity<CreateIngredientI18nResDto> createIngredientI18n(
-                        @Valid @RequestBody CreateIngredientI18nReqDto req) {
-                CreateIngredientI18nResDto res = ingredientI18nUseCase.createIngredientI18n(req);
                 return ResponseEntity.ok(res);
         }
 
@@ -272,6 +261,17 @@ public class IngredientAdminController {
         public ResponseEntity<DeleteEvidenceResDto> deleteEvidence(
                         @Parameter(description = "증거 ID", required = true, example = "1") @RequestParam("evidenceId") Long evidenceId) {
                 DeleteEvidenceResDto res = ingredientEvidenceUseCase.deleteEvidence(evidenceId);
+                return ResponseEntity.ok(res);
+        }
+
+        @RequestMapping(method = RequestMethod.GET, value = "/selectAll", produces = { "application/json" })
+        @Operation(summary = "재료 목록 조회", description = "모든 재료의 간단한 정보를 조회합니다 (ID, 이름, 활성화 여부).")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "재료 목록 조회 성공", content = @Content(schema = @Schema(implementation = SelectIngredientListItemDto.class))),
+                        @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
+        })
+        public ResponseEntity<List<SelectIngredientListItemDto>> selectAll() {
+                List<SelectIngredientListItemDto> res = ingredientAdminUseCase.selectAll();
                 return ResponseEntity.ok(res);
         }
 }

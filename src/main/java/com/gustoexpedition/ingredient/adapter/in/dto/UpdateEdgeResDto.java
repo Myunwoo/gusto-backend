@@ -31,8 +31,8 @@ public class UpdateEdgeResDto {
   @Schema(description = "관계 타입", example = "PAIR_WELL")
   private IngredientEdgeEntity.IngredientRelationType relationType;
 
-  @Schema(description = "관계 점수", example = "0.700")
-  private BigDecimal score;
+  @Schema(description = "관계 점수 (1-10)", example = "5")
+  private Integer score;
 
   @Schema(description = "신뢰도", example = "0.850")
   private BigDecimal confidence;

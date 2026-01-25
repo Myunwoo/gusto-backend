@@ -2,6 +2,8 @@ package com.gustoexpedition.ingredient.application.port.in;
 
 import com.gustoexpedition.ingredient.adapter.in.dto.*;
 
+import java.util.List;
+
 public interface IngredientAdminUseCase {
     /**
      * methodName : createIngredient
@@ -44,5 +46,14 @@ public interface IngredientAdminUseCase {
      * @return 재료 삭제 응답
      */
     DeleteIngredientResDto deleteIngredient(Long ingredientId);
+
+    /**
+     * methodName : selectAll
+     * author : fddsg
+     * description : 재료 목록 조회
+     *
+     * @return 재료 목록
+     */
+    List<SelectIngredientListItemDto> selectAll();
 
 }

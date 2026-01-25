@@ -32,76 +32,54 @@ public class IngredientI18nService implements IngredientI18nUseCase {
 
   @Override
   @Transactional
-  public CreateIngredientI18nResDto createIngredientI18n(CreateIngredientI18nReqDto req) {
-    // 재료 존재 확인
-    ingredientJpaRepository.findById(req.getIngredientId())
-        .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
-
-    // 중복 체크 (같은 locale과 name 조합)
-    ingredientI18nJpaRepository.findByLocaleAndName(req.getLocale(), req.getName().trim())
-        .ifPresent(existing -> {
-          throw new GustoException("INGR002");
-        });
-
-    // 같은 재료의 같은 locale이 이미 존재하는지 확인
-    ingredientI18nJpaRepository.findById(new IngredientI18nId(req.getIngredientId(), req.getLocale()))
-        .ifPresent(existing -> {
-          throw new GustoException("INGR003");
-        });
-
-    // IngredientI18n 엔티티 생성 및 저장
-    IngredientI18nEntity i18nEntity = new IngredientI18nEntity(
-        req.getIngredientId(),
-        req.getLocale(),
-        req.getName().trim(),
-        req.getDescription());
-    IngredientI18nEntity savedI18n = ingredientI18nJpaRepository.save(i18nEntity);
-
-    // 응답 DTO 생성
-    return new CreateIngredientI18nResDto(
-        savedI18n.getIngredientId(),
-        savedI18n.getLocale(),
-        savedI18n.getName(),
-        savedI18n.getDescription(),
-        savedI18n.getCreatedAt(),
-        savedI18n.getUpdatedAt());
-  }
-
-  @Override
-  @Transactional
   public UpdateIngredientI18nResDto updateIngredientI18n(UpdateIngredientI18nReqDto req) {
     // 재료 존재 확인
     ingredientJpaRepository.findById(req.getIngredientId())
         .orElseThrow(() -> new GustoException("INGR006")); // 재료를 찾을 수 없습니다.
 
-    // i18n 정보 조회
+    // i18n 정보 조회 (없으면 생성, 있으면 수정)
     IngredientI18nEntity i18nEntity = ingredientI18nJpaRepository.findById(
-        new IngredientI18nId(req.getIngredientId(), req.getLocale())).orElseThrow(() -> new GustoException("INGR007"));
+        new IngredientI18nId(req.getIngredientId(), req.getLocale()))
+        .orElse(null);
 
-    // 중복 체크 (다른 재료의 같은 locale과 name 조합인지 확인)
-    ingredientI18nJpaRepository.findByLocaleAndName(req.getLocale(), req.getName().trim())
-        .ifPresent(existing -> {
-          // 자기 자신이 아닌 경우에만 중복 에러
-          if (!existing.getIngredientId().equals(req.getIngredientId()) ||
-              !existing.getLocale().equals(req.getLocale())) {
+    if (i18nEntity == null) {
+      // 생성일 때 중복 체크
+      ingredientI18nJpaRepository.findByLocaleAndName(req.getLocale(), req.getName().trim())
+          .ifPresent(existing -> {
             throw new GustoException("INGR002"); // 이미 존재하는 재료명입니다.
-          }
-        });
+          });
 
-    // 엔티티 수정
-    i18nEntity.setName(req.getName().trim());
-    i18nEntity.setDescription(req.getDescription());
+      i18nEntity = new IngredientI18nEntity(
+          req.getIngredientId(),
+          req.getLocale(),
+          req.getName().trim(),
+          req.getDescription());
+    } else {
+      // 수정일 때 중복 체크 (다른 재료의 같은 locale과 name 조합인지 확인)
+      ingredientI18nJpaRepository.findByLocaleAndName(req.getLocale(), req.getName().trim())
+          .ifPresent(existing -> {
+            // 자기 자신이 아닌 경우에만 중복 에러
+            if (!existing.getIngredientId().equals(req.getIngredientId()) ||
+                !existing.getLocale().equals(req.getLocale())) {
+              throw new GustoException("INGR002"); // 이미 존재하는 재료명입니다.
+            }
+          });
 
-    // 저장
-    IngredientI18nEntity updatedI18n = ingredientI18nJpaRepository.save(i18nEntity);
+      // 엔티티 수정
+      i18nEntity.setName(req.getName().trim());
+      i18nEntity.setDescription(req.getDescription());
+    }
+
+    // 저장 (upsert)
+    IngredientI18nEntity savedI18n = ingredientI18nJpaRepository.save(i18nEntity);
 
     // 응답 DTO 생성
     return new UpdateIngredientI18nResDto(
-        updatedI18n.getIngredientId(),
-        updatedI18n.getLocale(),
-        updatedI18n.getName(),
-        updatedI18n.getDescription(),
-        updatedI18n.getUpdatedAt());
+        savedI18n.getIngredientId(),
+        savedI18n.getLocale(),
+        savedI18n.getName(),
+        savedI18n.getDescription(),
+        savedI18n.getUpdatedAt());
   }
 
   @Override

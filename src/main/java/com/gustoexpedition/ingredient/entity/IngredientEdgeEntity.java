@@ -28,11 +28,11 @@ public class IngredientEdgeEntity {
     private Long toIngredientId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "relation_type", nullable = false)
+    @Column(name = "relation_type", nullable = false, length = 20)
     private IngredientRelationType relationType;
 
-    @Column(name = "score", nullable = false, precision = 4, scale = 3)
-    private BigDecimal score;
+    @Column(name = "score", nullable = false)
+    private Integer score;
 
     @Column(name = "confidence", precision = 4, scale = 3)
     private BigDecimal confidence;
@@ -58,7 +58,7 @@ public class IngredientEdgeEntity {
     }
 
     public IngredientEdgeEntity(Long fromIngredientId, Long toIngredientId, IngredientRelationType relationType,
-            BigDecimal score, BigDecimal confidence, String reasonSummary) {
+            Integer score, BigDecimal confidence, String reasonSummary) {
         // 무방향 그래프를 위해 항상 작은 ID가 from이 되도록 정규화
         if (fromIngredientId > toIngredientId) {
             this.fromIngredientId = toIngredientId;
@@ -89,7 +89,7 @@ public class IngredientEdgeEntity {
         return relationType;
     }
 
-    public BigDecimal getScore() {
+    public Integer getScore() {
         return score;
     }
 
@@ -121,7 +121,7 @@ public class IngredientEdgeEntity {
         this.relationType = relationType;
     }
 
-    public void setScore(BigDecimal score) {
+    public void setScore(Integer score) {
         this.score = score;
     }
 
