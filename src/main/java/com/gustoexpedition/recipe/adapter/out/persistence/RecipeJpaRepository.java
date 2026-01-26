@@ -10,7 +10,12 @@ import java.util.List;
 public interface RecipeJpaRepository extends JpaRepository<RecipeEntity, Long> {
 
   /**
-   * 제목으로 레시피 검색
+   * 제목으로 레시피 검색 (정확히 일치)
+   */
+  java.util.Optional<RecipeEntity> findByTitle(String title);
+
+  /**
+   * 제목으로 레시피 검색 (부분 일치)
    */
   List<RecipeEntity> findByTitleContainingIgnoreCase(String title);
 

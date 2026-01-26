@@ -3,14 +3,24 @@ package com.gustoexpedition.recipe.application.service;
 import com.gustoexpedition.common.exception.GustoException;
 import com.gustoexpedition.ingredient.adapter.out.persistence.IngredientJpaRepository;
 import com.gustoexpedition.recipe.adapter.in.dto.*;
+import com.gustoexpedition.recipe.adapter.out.persistence.RecipeAliasJpaRepository;
+import com.gustoexpedition.recipe.adapter.out.persistence.RecipeI18nJpaRepository;
 import com.gustoexpedition.recipe.adapter.out.persistence.RecipeIngredientJpaRepository;
 import com.gustoexpedition.recipe.adapter.out.persistence.RecipeJpaRepository;
 import com.gustoexpedition.recipe.application.port.in.RecipeAdminUseCase;
+import com.gustoexpedition.recipe.entity.RecipeAliasEntity;
 import com.gustoexpedition.recipe.entity.RecipeEntity;
+import com.gustoexpedition.recipe.entity.RecipeI18nEntity;
 import com.gustoexpedition.recipe.entity.RecipeIngredientEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * packageName : com.gustoexpedition.recipe.application.service
@@ -24,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class RecipeAdminService implements RecipeAdminUseCase {
 
   private final RecipeJpaRepository recipeJpaRepository;
+  private final RecipeI18nJpaRepository recipeI18nJpaRepository;
+  private final RecipeAliasJpaRepository recipeAliasJpaRepository;
   private final RecipeIngredientJpaRepository recipeIngredientJpaRepository;
   private final IngredientJpaRepository ingredientJpaRepository;
 
@@ -35,26 +47,28 @@ public class RecipeAdminService implements RecipeAdminUseCase {
       throw new GustoException("RECIPE001"); // 레시피 제목은 필수입니다.
     }
     if (req.getTitle().length() > 120) {
-      throw new GustoException("RECIPE002"); // 레시피 제목은 120자 이하여야 합니다.
+      throw new GustoException("RECIPE004"); // 레시피 제목은 120자 이하여야 합니다.
+    }
+    if (req.getSource() != null && req.getSource().length() > 500) {
+      throw new GustoException("RECIPE006"); // 레시피 출처는 500자 이하여야 합니다.
     }
 
-    // 2. Recipe 엔티티 생성 및 저장
+    // 2. 중복 체크
+    if (recipeJpaRepository.findByTitle(req.getTitle().trim()).isPresent()) {
+      throw new GustoException("RECIPE005"); // 동일한 제목의 레시피가 이미 존재합니다.
+    }
+
+    // 3. Recipe 엔티티 생성 및 저장
     RecipeEntity recipeEntity = new RecipeEntity(
         req.getTitle().trim(),
-        req.getDescription(),
-        req.getInstructions(),
-        req.getServings(),
-        req.getCookTimeMinutes());
+        req.getSource() != null ? req.getSource().trim() : null);
     RecipeEntity savedRecipe = recipeJpaRepository.save(recipeEntity);
 
-    // 3. 응답 DTO 생성
+    // 4. 응답 DTO 생성
     return new CreateRecipeResDto(
         savedRecipe.getRecipeId(),
         savedRecipe.getTitle(),
-        savedRecipe.getDescription(),
-        savedRecipe.getInstructions(),
-        savedRecipe.getServings(),
-        savedRecipe.getCookTimeMinutes(),
+        savedRecipe.getSource(),
         savedRecipe.getCreatedAt());
   }
 
@@ -69,14 +83,30 @@ public class RecipeAdminService implements RecipeAdminUseCase {
       return null;
     }
 
-    // 2. 응답 DTO 생성
+    // 2. recipe_i18n 정보 조회 (모든 locale)
+    List<RecipeI18nEntity> i18nList = recipeI18nJpaRepository.findByRecipeId(recipeId);
+    Map<String, RecipeLocaleInfoDto> localeInfoMap = new HashMap<>();
+    for (RecipeI18nEntity i18n : i18nList) {
+      localeInfoMap.put(i18n.getLocale(), new RecipeLocaleInfoDto(
+          i18n.getDescription(),
+          i18n.getInstructions()));
+    }
+
+    // 3. recipe_alias 정보 조회 (모든 locale)
+    List<RecipeAliasEntity> aliasList = recipeAliasJpaRepository.findByRecipeId(recipeId);
+    Map<String, List<RecipeAliasDto>> aliasMap = new HashMap<>();
+    for (RecipeAliasEntity alias : aliasList) {
+      aliasMap.computeIfAbsent(alias.getLocale(), k -> new ArrayList<>())
+          .add(new RecipeAliasDto(alias.getAliasId(), alias.getAlias()));
+    }
+
+    // 4. 응답 DTO 생성
     return new SelectRecipeResDto(
         recipe.getRecipeId(),
         recipe.getTitle(),
-        recipe.getDescription(),
-        recipe.getInstructions(),
-        recipe.getServings(),
-        recipe.getCookTimeMinutes(),
+        recipe.getSource(),
+        localeInfoMap,
+        aliasMap,
         recipe.getRequiredIngredientIds(),
         recipe.getOptionalIngredientIds(),
         recipe.getCreatedAt(),
@@ -88,34 +118,39 @@ public class RecipeAdminService implements RecipeAdminUseCase {
   public UpdateRecipeResDto updateRecipe(UpdateRecipeReqDto req) {
     // 1. Recipe 조회
     RecipeEntity recipe = recipeJpaRepository.findById(req.getRecipeId())
-        .orElseThrow(() -> new GustoException("RECIPE004")); // 레시피를 찾을 수 없습니다.
+        .orElseThrow(() -> new GustoException("RECIPE002")); // 레시피를 찾을 수 없습니다.
 
     // 2. 입력 검증
     if (req.getTitle() == null || req.getTitle().trim().isEmpty()) {
       throw new GustoException("RECIPE001"); // 레시피 제목은 필수입니다.
     }
     if (req.getTitle().length() > 120) {
-      throw new GustoException("RECIPE002"); // 레시피 제목은 120자 이하여야 합니다.
+      throw new GustoException("RECIPE004"); // 레시피 제목은 120자 이하여야 합니다.
+    }
+    if (req.getSource() != null && req.getSource().length() > 500) {
+      throw new GustoException("RECIPE006"); // 레시피 출처는 500자 이하여야 합니다.
     }
 
-    // 3. 엔티티 수정
-    recipe.setTitle(req.getTitle().trim());
-    recipe.setDescription(req.getDescription());
-    recipe.setInstructions(req.getInstructions());
-    recipe.setServings(req.getServings());
-    recipe.setCookTimeMinutes(req.getCookTimeMinutes());
+    // 3. 중복 체크 (자기 자신 제외)
+    recipeJpaRepository.findByTitle(req.getTitle().trim())
+        .ifPresent(existing -> {
+          if (!existing.getRecipeId().equals(req.getRecipeId())) {
+            throw new GustoException("RECIPE005"); // 동일한 제목의 레시피가 이미 존재합니다.
+          }
+        });
 
-    // 4. 저장
+    // 4. 엔티티 수정
+    recipe.setTitle(req.getTitle().trim());
+    recipe.setSource(req.getSource() != null ? req.getSource().trim() : null);
+
+    // 5. 저장
     RecipeEntity updatedRecipe = recipeJpaRepository.save(recipe);
 
-    // 5. 응답 DTO 생성
+    // 6. 응답 DTO 생성
     return new UpdateRecipeResDto(
         updatedRecipe.getRecipeId(),
         updatedRecipe.getTitle(),
-        updatedRecipe.getDescription(),
-        updatedRecipe.getInstructions(),
-        updatedRecipe.getServings(),
-        updatedRecipe.getCookTimeMinutes(),
+        updatedRecipe.getSource(),
         updatedRecipe.getUpdatedAt());
   }
 
@@ -124,7 +159,7 @@ public class RecipeAdminService implements RecipeAdminUseCase {
   public DeleteRecipeResDto deleteRecipe(Long recipeId) {
     // 1. Recipe 조회
     RecipeEntity recipe = recipeJpaRepository.findById(recipeId)
-        .orElseThrow(() -> new GustoException("RECIPE004")); // 레시피를 찾을 수 없습니다.
+        .orElseThrow(() -> new GustoException("RECIPE002")); // 레시피를 찾을 수 없습니다.
 
     // 2. Recipe 삭제 (CASCADE로 recipe_ingredient도 함께 삭제됨)
     recipeJpaRepository.delete(recipe);
@@ -140,7 +175,7 @@ public class RecipeAdminService implements RecipeAdminUseCase {
   public CreateRecipeIngredientResDto createRecipeIngredient(CreateRecipeIngredientReqDto req) {
     // 1. Recipe 존재 확인
     recipeJpaRepository.findById(req.getRecipeId())
-        .orElseThrow(() -> new GustoException("RECIPE004")); // 레시피를 찾을 수 없습니다.
+        .orElseThrow(() -> new GustoException("RECIPE002")); // 레시피를 찾을 수 없습니다.
 
     // 2. 재료 존재 확인
     ingredientJpaRepository.findById(req.getIngredientId())
@@ -266,5 +301,57 @@ public class RecipeAdminService implements RecipeAdminUseCase {
     return new DeleteRecipeIngredientResDto(
         recipeIngredientId,
         "레시피 재료가 성공적으로 삭제되었습니다.");
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<SelectRecipeListItemDto> selectAll() {
+    List<RecipeEntity> recipes = recipeJpaRepository.findAll();
+
+    return recipes.stream()
+        .map(recipe -> new SelectRecipeListItemDto(
+            recipe.getRecipeId(),
+            recipe.getTitle(),
+            recipe.getCreatedAt(),
+            recipe.getUpdatedAt()))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  @Transactional
+  public UpdateRecipeI18nResDto updateRecipeI18n(UpdateRecipeI18nReqDto req) {
+    // 1. Recipe 존재 확인
+    recipeJpaRepository.findById(req.getRecipeId())
+        .orElseThrow(() -> new GustoException("RECIPE002")); // 레시피를 찾을 수 없습니다.
+
+    // 2. 입력 검증
+    if (req.getLocale() == null || req.getLocale().trim().isEmpty()) {
+      throw new GustoException("RECIPE010"); // 언어 코드는 필수입니다.
+    }
+
+    // 3. recipe_i18n 조회 또는 생성 (upsert)
+    RecipeI18nEntity i18n = recipeI18nJpaRepository
+        .findByRecipeIdAndLocale(req.getRecipeId(), req.getLocale())
+        .orElse(new RecipeI18nEntity(
+            req.getRecipeId(),
+            req.getLocale(),
+            null,
+            null));
+
+    // 4. 엔티티 수정
+    i18n.setDescription(req.getDescription());
+    i18n.setInstructions(req.getInstructions());
+
+    // 5. 저장
+    RecipeI18nEntity savedI18n = recipeI18nJpaRepository.save(i18n);
+
+    // 6. 응답 DTO 생성
+    return new UpdateRecipeI18nResDto(
+        savedI18n.getRecipeId(),
+        savedI18n.getLocale(),
+        savedI18n.getDescription(),
+        savedI18n.getInstructions(),
+        savedI18n.getCreatedAt(),
+        savedI18n.getUpdatedAt());
   }
 }

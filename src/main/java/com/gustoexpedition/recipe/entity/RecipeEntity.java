@@ -25,17 +25,8 @@ public class RecipeEntity {
   @Column(name = "title", nullable = false, length = 120)
   private String title;
 
-  @Column(name = "description", columnDefinition = "TEXT")
-  private String description;
-
-  @Column(name = "instructions", columnDefinition = "TEXT")
-  private String instructions;
-
-  @Column(name = "servings")
-  private Integer servings;
-
-  @Column(name = "cook_time_minutes")
-  private Integer cookTimeMinutes;
+  @Column(name = "source", length = 500)
+  private String source;
 
   @Column(name = "required_ingredient_ids", nullable = false, columnDefinition = "int[]")
   private Integer[] requiredIngredientIds = new Integer[0];
@@ -52,13 +43,15 @@ public class RecipeEntity {
   protected RecipeEntity() {
   }
 
-  public RecipeEntity(String title, String description, String instructions, Integer servings,
-      Integer cookTimeMinutes) {
+  public RecipeEntity(String title) {
     this.title = title;
-    this.description = description;
-    this.instructions = instructions;
-    this.servings = servings;
-    this.cookTimeMinutes = cookTimeMinutes;
+    this.requiredIngredientIds = new Integer[0];
+    this.optionalIngredientIds = new Integer[0];
+  }
+
+  public RecipeEntity(String title, String source) {
+    this.title = title;
+    this.source = source;
     this.requiredIngredientIds = new Integer[0];
     this.optionalIngredientIds = new Integer[0];
   }
@@ -71,20 +64,8 @@ public class RecipeEntity {
     return title;
   }
 
-  public String getDescription() {
-    return description;
-  }
-
-  public String getInstructions() {
-    return instructions;
-  }
-
-  public Integer getServings() {
-    return servings;
-  }
-
-  public Integer getCookTimeMinutes() {
-    return cookTimeMinutes;
+  public String getSource() {
+    return source;
   }
 
   public Integer[] getRequiredIngredientIds() {
@@ -107,20 +88,8 @@ public class RecipeEntity {
     this.title = title;
   }
 
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public void setInstructions(String instructions) {
-    this.instructions = instructions;
-  }
-
-  public void setServings(Integer servings) {
-    this.servings = servings;
-  }
-
-  public void setCookTimeMinutes(Integer cookTimeMinutes) {
-    this.cookTimeMinutes = cookTimeMinutes;
+  public void setSource(String source) {
+    this.source = source;
   }
 
   public void setRequiredIngredientIds(Integer[] requiredIngredientIds) {

@@ -2,6 +2,8 @@ package com.gustoexpedition.recipe.application.port.in;
 
 import com.gustoexpedition.recipe.adapter.in.dto.*;
 
+import java.util.List;
+
 public interface RecipeAdminUseCase {
     /**
      * methodName : createRecipe
@@ -82,4 +84,23 @@ public interface RecipeAdminUseCase {
      * @return 레시피 재료 삭제 응답
      */
     DeleteRecipeIngredientResDto deleteRecipeIngredient(Long recipeIngredientId);
+
+    /**
+     * methodName : selectAll
+     * author : fddsg
+     * description : 레시피 목록 조회
+     *
+     * @return 레시피 목록
+     */
+    List<SelectRecipeListItemDto> selectAll();
+
+    /**
+     * methodName : updateRecipeI18n
+     * author : fddsg
+     * description : 레시피 Locale별 정보 수정 (upsert: 없으면 생성, 있으면 수정)
+     *
+     * @param req 레시피 Locale별 정보 수정 요청
+     * @return 레시피 Locale별 정보 수정 응답
+     */
+    UpdateRecipeI18nResDto updateRecipeI18n(UpdateRecipeI18nReqDto req);
 }

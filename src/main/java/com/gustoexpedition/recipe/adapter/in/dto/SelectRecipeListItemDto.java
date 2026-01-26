@@ -8,23 +8,23 @@ import java.time.Instant;
 
 /**
  * packageName : com.gustoexpedition.recipe.adapter.in.dto
- * fileName : UpdateRecipeResDto
+ * fileName : SelectRecipeListItemDto
  * author : fddsg
- * date : 2026-01-16
- * description : 레시피 수정 응답 DTO
+ * date : 2026-01-20
+ * description : 레시피 목록 조회 응답 DTO (목록용)
  */
 @Getter
 @AllArgsConstructor
-@Schema(description = "레시피 수정 응답")
-public class UpdateRecipeResDto {
+@Schema(description = "레시피 목록 항목")
+public class SelectRecipeListItemDto {
   @Schema(description = "레시피 ID", example = "1")
   private Long recipeId;
 
   @Schema(description = "레시피 제목", example = "토마토 파스타")
   private String title;
 
-  @Schema(description = "레시피 출처", example = "https://example.com/recipe/tomato-pasta")
-  private String source;
+  @Schema(description = "생성 일시", example = "2026-01-16T10:30:00Z")
+  private Instant createdAt;
 
   @Schema(description = "수정 일시", example = "2026-01-16T10:30:00Z")
   private Instant updatedAt;

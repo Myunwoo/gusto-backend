@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 /**
  * packageName : com.gustoexpedition.recipe.adapter.in.dto
@@ -23,17 +25,14 @@ public class SelectRecipeResDto {
     @Schema(description = "레시피 제목", example = "토마토 파스타")
     private String title;
 
-    @Schema(description = "레시피 설명", example = "간단하고 맛있는 토마토 파스타입니다.")
-    private String description;
+    @Schema(description = "레시피 출처", example = "https://example.com/recipe/tomato-pasta")
+    private String source;
 
-    @Schema(description = "조리 방법", example = "1. 파스타를 끓는 물에 넣고 10분간 삶는다.")
-    private String instructions;
+    @Schema(description = "locale별 레시피 정보 (locale이 없으면 모든 locale, 있으면 해당 locale만)", example = "{\"ko-KR\": {\"description\": \"간단하고 맛있는 토마토 파스타입니다.\", \"instructions\": \"1. 파스타를 끓는 물에 넣고 10분간 삶는다.\"}}")
+    private Map<String, RecipeLocaleInfoDto> localeInfo;
 
-    @Schema(description = "인분", example = "2")
-    private Integer servings;
-
-    @Schema(description = "조리 시간 (분)", example = "20")
-    private Integer cookTimeMinutes;
+    @Schema(description = "locale별 별칭 정보", example = "{\"ko-KR\": [{\"aliasId\": 1, \"alias\": \"토마토 파스타\"}]}")
+    private Map<String, List<RecipeAliasDto>> aliases;
 
     @Schema(description = "필수 재료 ID 목록", example = "[1, 2, 3]")
     private Integer[] requiredIngredientIds;
@@ -47,4 +46,3 @@ public class SelectRecipeResDto {
     @Schema(description = "수정 일시", example = "2026-01-16T10:30:00Z")
     private Instant updatedAt;
 }
-
