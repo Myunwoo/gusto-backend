@@ -103,4 +103,14 @@ public interface RecipeAdminUseCase {
      * @return 레시피 Locale별 정보 수정 응답
      */
     UpdateRecipeI18nResDto updateRecipeI18n(UpdateRecipeI18nReqDto req);
+
+    /**
+     * methodName : selectRecipeIngredientsByRecipeId
+     * author : fddsg
+     * description : 레시피의 모든 재료 조회
+     *
+     * @param recipeId 레시피 ID
+     * @return 레시피 재료 목록
+     */
+    List<SelectRecipeIngredientListItemDto> selectRecipeIngredientsByRecipeId(Long recipeId);
 }

@@ -29,7 +29,7 @@ public class RecipeIngredientEntity {
   private Long ingredientId;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "role", nullable = false)
+  @Column(name = "role", nullable = false, length = 20)
   private RecipeIngredientRole role = RecipeIngredientRole.REQUIRED;
 
   @Column(name = "amount", precision = 10, scale = 3)

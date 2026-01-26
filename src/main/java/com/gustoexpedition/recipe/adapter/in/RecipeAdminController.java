@@ -213,4 +213,17 @@ public class RecipeAdminController {
     DeleteAliasResDto res = recipeAliasUseCase.deleteAlias(aliasId);
     return ResponseEntity.ok(res);
   }
+
+  @RequestMapping(method = RequestMethod.GET, value = "/selectRecipeIngredientsByRecipeId", produces = { "application/json" })
+  @Operation(summary = "레시피 재료 목록 조회", description = "레시피 ID로 레시피에 포함된 모든 재료를 조회합니다.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "레시피 재료 목록 조회 성공", content = @Content(schema = @Schema(implementation = SelectRecipeIngredientListItemDto.class))),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청 (레시피 없음 등)", content = @Content),
+      @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
+  })
+  public ResponseEntity<java.util.List<SelectRecipeIngredientListItemDto>> selectRecipeIngredientsByRecipeId(
+      @Parameter(description = "레시피 ID", required = true, example = "1") @RequestParam("recipeId") Long recipeId) {
+    java.util.List<SelectRecipeIngredientListItemDto> res = recipeAdminUseCase.selectRecipeIngredientsByRecipeId(recipeId);
+    return ResponseEntity.ok(res);
+  }
 }

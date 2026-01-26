@@ -12,6 +12,9 @@ import com.gustoexpedition.recipe.entity.RecipeAliasEntity;
 import com.gustoexpedition.recipe.entity.RecipeEntity;
 import com.gustoexpedition.recipe.entity.RecipeI18nEntity;
 import com.gustoexpedition.recipe.entity.RecipeIngredientEntity;
+import com.gustoexpedition.ingredient.entity.IngredientEntity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,11 +36,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RecipeAdminService implements RecipeAdminUseCase {
 
+  private static final String REFRESH_RECIPE_INGREDIENT_CACHE_FUNCTION = "refresh_recipe_ingredient_cache";
+
   private final RecipeJpaRepository recipeJpaRepository;
   private final RecipeI18nJpaRepository recipeI18nJpaRepository;
   private final RecipeAliasJpaRepository recipeAliasJpaRepository;
   private final RecipeIngredientJpaRepository recipeIngredientJpaRepository;
   private final IngredientJpaRepository ingredientJpaRepository;
+
+  @PersistenceContext
+  private EntityManager entityManager;
 
   @Override
   @Transactional
@@ -199,7 +207,9 @@ public class RecipeAdminService implements RecipeAdminUseCase {
     RecipeIngredientEntity savedIngredient = recipeIngredientJpaRepository.save(ingredientEntity);
 
     // 5. 레시피 캐시 업데이트 (required_ingredient_ids, optional_ingredient_ids)
-    recipeIngredientJpaRepository.refreshRecipeIngredientCache(req.getRecipeId());
+    entityManager.createNativeQuery("SELECT " + REFRESH_RECIPE_INGREDIENT_CACHE_FUNCTION + "(:recipeId)")
+        .setParameter("recipeId", req.getRecipeId())
+        .getResultList();
 
     // 6. 응답 DTO 생성
     return new CreateRecipeIngredientResDto(
@@ -269,7 +279,9 @@ public class RecipeAdminService implements RecipeAdminUseCase {
     RecipeIngredientEntity updatedIngredient = recipeIngredientJpaRepository.save(ingredient);
 
     // 5. 레시피 캐시 업데이트 (required_ingredient_ids, optional_ingredient_ids)
-    recipeIngredientJpaRepository.refreshRecipeIngredientCache(ingredient.getRecipeId());
+    entityManager.createNativeQuery("SELECT " + REFRESH_RECIPE_INGREDIENT_CACHE_FUNCTION + "(:recipeId)")
+        .setParameter("recipeId", ingredient.getRecipeId())
+        .getResultList();
 
     // 6. 응답 DTO 생성
     return new UpdateRecipeIngredientResDto(
@@ -295,7 +307,9 @@ public class RecipeAdminService implements RecipeAdminUseCase {
     recipeIngredientJpaRepository.delete(ingredient);
 
     // 3. 레시피 캐시 업데이트 (required_ingredient_ids, optional_ingredient_ids)
-    recipeIngredientJpaRepository.refreshRecipeIngredientCache(recipeId);
+    entityManager.createNativeQuery("SELECT " + REFRESH_RECIPE_INGREDIENT_CACHE_FUNCTION + "(:recipeId)")
+        .setParameter("recipeId", recipeId)
+        .getResultList();
 
     // 4. 응답 DTO 생성
     return new DeleteRecipeIngredientResDto(
@@ -353,5 +367,45 @@ public class RecipeAdminService implements RecipeAdminUseCase {
         savedI18n.getInstructions(),
         savedI18n.getCreatedAt(),
         savedI18n.getUpdatedAt());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<SelectRecipeIngredientListItemDto> selectRecipeIngredientsByRecipeId(Long recipeId) {
+    // 1. 레시피 존재 확인
+    recipeJpaRepository.findById(recipeId)
+        .orElseThrow(() -> new GustoException("RECIPE002")); // 레시피를 찾을 수 없습니다.
+
+    // 2. 레시피 재료 목록 조회
+    List<RecipeIngredientEntity> recipeIngredients = recipeIngredientJpaRepository.findByRecipeId(recipeId);
+
+    // 3. 재료 ID 목록 추출
+    List<Long> ingredientIds = recipeIngredients.stream()
+        .map(RecipeIngredientEntity::getIngredientId)
+        .distinct()
+        .collect(Collectors.toList());
+
+    // 4. 재료 정보 일괄 조회 (ID -> 이름 매핑)
+    Map<Long, String> ingredientNameMap = new HashMap<>();
+    if (!ingredientIds.isEmpty()) {
+      List<IngredientEntity> ingredients = ingredientJpaRepository.findAllById(ingredientIds);
+      ingredientNameMap = ingredients.stream()
+          .collect(Collectors.toMap(
+              IngredientEntity::getIngredientId,
+              IngredientEntity::getName));
+    }
+
+    // 5. 응답 DTO 생성
+    final Map<Long, String> finalIngredientNameMap = ingredientNameMap;
+    return recipeIngredients.stream()
+        .map(ri -> new SelectRecipeIngredientListItemDto(
+            ri.getRecipeIngredientId(),
+            ri.getIngredientId(),
+            finalIngredientNameMap.getOrDefault(ri.getIngredientId(), "알 수 없음"),
+            ri.getRole(),
+            ri.getAmount(),
+            ri.getUnit(),
+            ri.getNote()))
+        .collect(Collectors.toList());
   }
 }
