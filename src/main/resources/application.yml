@@ -59,6 +59,9 @@ gusto:
       - "/api/auth/refresh"
       # 회원가입 (인증 불필요)
       - "/api/user/signup"
+      # Explore (비로그인)
+      - "GET:/api/explore/recommendedIngredientId"
+      - "GET:/api/explore/mindmap-tree/**"
     jwt:
       secret: ${JWT_SECRET:your-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm}
       access-token-expiration: 600000
