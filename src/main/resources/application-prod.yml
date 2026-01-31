@@ -11,7 +11,7 @@ logging:
     org.springframework.transaction: WARN
     com.gustoexpedition: INFO
   file:
-    name: ${LOG_PATH:-/var/log/gusto}/gusto-backend.log
+    name: ${LOG_PATH:/var/log/gusto}/gusto-backend.log
 
 
 spring:
