@@ -3,7 +3,7 @@
 # ============================================
 # Build Stage: Gradle을 사용하여 JAR 빌드
 # ============================================
-FROM gradle:8.8-jdk17 AS build
+FROM gradle:8.14.3-jdk17 AS build
 WORKDIR /app
 
 # Gradle 캐시 최적화: 의존성 파일만 먼저 복사하여 캐시 활용
