@@ -20,13 +20,14 @@ public class ExploreRecommendedIngredientEntity {
     @Column(name = "ingredient_id", nullable = false)
     private Long ingredientId;
 
-    @Column(name = "use_yn", nullable = false, length = 1)
+    @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "bpchar(1)")
     private String useYn = "Y";
 
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 
-    protected ExploreRecommendedIngredientEntity() {}
+    protected ExploreRecommendedIngredientEntity() {
+    }
 
     public ExploreRecommendedIngredientEntity(Long ingredientId, String useYn) {
         this.ingredientId = ingredientId;
