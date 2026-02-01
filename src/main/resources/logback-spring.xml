@@ -2,16 +2,14 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-
     <springProperty scope="context" name="LOG_FILE" source="logging.file.name"/>
 
-    <!-- 개발용 콘솔 패턴 -->
-    <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"/>
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"/>
 
-    <!-- 파일 패턴 (Plain Text) -->
-    <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%t] %-40.40logger{39} : %m%n%wEx"/>
+    <property name="FILE_LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%t] %-40.40logger{39} : %m%n%wEx"/>
 
-    <!-- Console Appender (dev에서만 사용) -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${CONSOLE_LOG_PATTERN}</pattern>
@@ -19,42 +17,26 @@
         </encoder>
     </appender>
 
-    <!-- Rolling File Appender: 1일 1파일 + gzip 압축 + 5일 보관 -->
     <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_FILE}</file>
 
-        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="ch.qos.logback.classic.PatternLayout">
-                <pattern>${FILE_LOG_PATTERN}</pattern>
-            </layout>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
         </encoder>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- 예: /var/log/gusto/gusto-backend.log.2026-02-01.gz -->
             <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.gz</fileNamePattern>
-
-            <!-- 5일치만 보관 -->
             <maxHistory>5</maxHistory>
-
-            <!-- 총량 제한: 디스크 폭증 방지 -->
             <totalSizeCap>500MB</totalSizeCap>
-
-            <!-- 기동 시 오래된 로그 정리 -->
             <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
     </appender>
 
-    <!-- =========================
-         기본 로거 정책
-         ========================= -->
-
-    <!-- Root: prod에서는 파일만, dev에서는 콘솔+파일 -->
     <root level="INFO">
         <appender-ref ref="ROLLING_FILE"/>
     </root>
 
-    <!-- dev 프로파일: 콘솔도 같이 -->
     <springProfile name="dev,local">
         <root level="DEBUG">
             <appender-ref ref="CONSOLE"/>
@@ -65,7 +47,7 @@
     <springProfile name="prod">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="FILE"/>
+            <appender-ref ref="ROLLING_FILE"/>
         </root>
 
         <logger name="org.hibernate.SQL" level="WARN"/>
@@ -75,13 +57,10 @@
         <logger name="com.gustoexpedition" level="INFO"/>
     </springProfile>
 
-
-    <!-- (옵션) sql 프로파일: 필요할 때만 켜는 쿼리 로깅 -->
     <springProfile name="sql">
         <logger name="org.hibernate.SQL" level="DEBUG"/>
         <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
         <logger name="org.springframework.data.jpa.repository.query" level="DEBUG"/>
         <logger name="org.springframework.transaction" level="DEBUG"/>
     </springProfile>
-
 </configuration>
