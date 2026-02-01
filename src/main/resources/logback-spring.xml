@@ -62,14 +62,19 @@
         </root>
     </springProfile>
 
-    <!-- prod 프로파일: 콘솔 없음, 쿼리 로그 기본 OFF (WARN 이상만) -->
     <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </root>
+
         <logger name="org.hibernate.SQL" level="WARN"/>
         <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN"/>
         <logger name="org.springframework.data.jpa.repository.query" level="WARN"/>
         <logger name="org.springframework.transaction" level="WARN"/>
         <logger name="com.gustoexpedition" level="INFO"/>
     </springProfile>
+
 
     <!-- (옵션) sql 프로파일: 필요할 때만 켜는 쿼리 로깅 -->
     <springProfile name="sql">
