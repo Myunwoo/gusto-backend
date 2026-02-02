@@ -267,6 +267,7 @@ public class AccessTokenFilter extends OncePerRequestFilter {
             return false;
         }
         List<String> profiles = Arrays.asList(activeProfiles);
-        return profiles.contains("local") || profiles.contains("dev");
+        // 임시로 prod에서 허용
+        return profiles.contains("local") || profiles.contains("dev") || profiles.contains("prod");
     }
 }
